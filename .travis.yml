@@ -1,0 +1,27 @@
+sudo: false
+language: python
+services:
+  - docker
+python:
+  - '3.7'
+  - '3.8'
+  - '3.9'
+before_install:
+  - docker-compose up -d
+install:
+  - pip install tox-travis
+  - pip install codecov
+script:
+  - tox -e qa_style
+  - tox
+after_success:
+  - codecov
+deploy:
+  provider: pypi
+  user: jim.carreer
+  password:
+    secure: jutzNflfpJF8AGg8mElpXwsZ9qnC7Ha+YWpnzhPSu5JRUgi601GX3qSKne4ayT6X4zFiB81KSM/HojgYYODk/W9CEbqvt1N5wYnnBVfETI3z18Go3H5226cIzWVSkaRCz8k2RIctHt6eGAcs9JBlwtzTj/HXVJQ+QdZj5ej0puc+mjHBeWkUSllC4+Xky63KEwRyUYOHhiD3k6vSdB/VAVoTgH6OdvH0VRMXWTbhPQq2nu7dIXcN2BDvwL3R5k0wIF4F2IChiFEdAJgzh0nQe4w/S95RblkzyqZs2S5SwaRiYrFNt1xGTQIXkEhrO/iLokvm7gH+eLBViTW85Gor+jG/iFhH8IxzDuBn6rkCuaYo4+tPKEMGSrUVqKcgZwPGAoVPxB+vgqXwX7WcqJi2KWXDs9NvVyxLem5j4HxWGxBkg4vgwH7qrPcxv4TF3iwsKJTwgXzOtehqVsHXf/Y45f3KAMDlUZi+E9KB2Q/W7f2PyRuzjCqyB3O/V1gudXGHJAuHLeDaavpnveawlkV7r8CzVGALWZ0gEMJeLZXOZWf3k0kgwGSwGvCJNxkyvrceq5zci5refDJ2gO4yRpbMnPMhLB5LRhvnE9lYpwcaXugzepibHmbhQjgloUp6mgmlwqw/c4iGy5mhV3WCNu1e7QvZgtFk2TJ9XAtCZ5k6Byg=
+  on:
+    branch: main
+    tags: true
+    python: 3.8
