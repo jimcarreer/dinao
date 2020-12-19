@@ -9,9 +9,9 @@ binder = FunctionBinder(db_pool)
 
 
 @binder.execute(
-    "CREATE TABLE IF NOT EXISTS my_table (\n"
-    "  name VARCHAR(32) PRIMARY KEY,\n"
-    "  value INTEGER DEFAULT 0\n"
+    "CREATE TABLE IF NOT EXISTS my_table ( "
+    "  name VARCHAR(32) PRIMARY KEY, "
+    "  value INTEGER DEFAULT 0"
     ")"
 )
 def make_table():
@@ -19,9 +19,9 @@ def make_table():
 
 
 @binder.execute(
-    "INSERT INTO my_table (name, value) VALUES(#{name}, #{value})\n"
-    "ON CONFLICT (name) DO UPDATE\n"
-    "  SET value = #{value}\n"
+    "INSERT INTO my_table (name, value) VALUES(#{name}, #{value}) "
+    "ON CONFLICT (name) DO UPDATE "
+    "  SET value = #{value} "
     "WHERE my_table.name = #{name}"
 )
 def upsert(name: str, value: int):
