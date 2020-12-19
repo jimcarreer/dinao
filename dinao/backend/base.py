@@ -1,15 +1,23 @@
-"""Defines a basic and primitive database interface."""
+"""Defines a basic and primitive database interface. It is basically a thin wrapper on DB API 2.0."""
 
 import logging
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import List, Tuple
 
+from dinao.backend.errors import ConfigurationError
 
-class ResultSet(ABC):
+
+class ResultSet:
     """Basic interface definition for result sets (a.k.a rows) returned from Database queries."""
 
-    @abstractmethod
+    def __init__(self, cursor):
+        """Construct a result set.
+
+        :param cursor: the underlying DB API 2.0 cursor being wrapped by this object.
+        """
+        self._cursor = cursor
+
     def fetchone(self) -> tuple:
         """Fetch one result tuple from the underlying cursor.
 
@@ -17,9 +25,8 @@ class ResultSet(ABC):
 
         :return: a tuple representing a result row or None
         """
-        pass  # pragma: no cover
+        return self._cursor.fetchone()
 
-    @abstractmethod
     def fetchall(self) -> List[tuple]:
         """Fetch the *remaining* result tuples from the underlying cursor.
 
@@ -27,39 +34,41 @@ class ResultSet(ABC):
 
         :return: a list of tuples that are the remaining results of the underlying cursor.
         """
-        pass  # pragma: no cover
+        return self._cursor.fetchall()
 
-    @abstractmethod
     def columns(self) -> Tuple[str]:
         """Return a tuple representing the column names of the result set.
 
         :return: a tuple of strings that are column names matching the order of results.
         """
-        pass  # pragma: no cover
+        return tuple([str(d[0]) for d in self._cursor.description])
 
 
 class Connection(ABC):
     """Basic interface definition for a database connection."""
 
-    def __init__(self, auto_commit: bool = True):
+    def __init__(self, cnx, auto_commit: bool = True):
         """Construct a Connection object.
 
+        :param cnx: the inner DB API 2.0 connection this object wraps
         :param auto_commit: should calls to execute() be automatically committed, defaults to True
         """
         self.logger = logging.getLogger(__name__)
+        self._cnx = cnx
         self._auto_commit = auto_commit
 
-    @abstractmethod
     def commit(self):
         """Commit changes for this connection / transaction to the database."""
-        pass  # pragma: no cover
+        self._cnx.commit()
 
-    @abstractmethod
     def rollback(self):
         """Rollback changes for this connection / transaction to the database."""
-        pass  # pragma: no cover
+        self._cnx.rollback()
 
     @abstractmethod
+    def _execute(self, cursor, sql: str, params: tuple = None):
+        pass  # pragma: no cover
+
     @contextmanager
     def query(self, sql: str, params: tuple = None) -> ResultSet:
         """Execute the given SQL as a statement with the given parameters. Provide the results as context.
@@ -68,9 +77,11 @@ class Connection(ABC):
         :param params: the values to bind to the execution of the given SQL
         :returns: a result set representing the query's results
         """
-        pass  # pragma: no cover
+        cursor = self._cnx.cursor()
+        self._execute(cursor, sql, params)
+        yield ResultSet(cursor)
+        cursor.close()
 
-    @abstractmethod
     def execute(self, sql: str, params: tuple = None, commit: bool = None) -> int:
         """Execute the given SQL as a statement with the given parameters and return the affected row count.
 
@@ -78,7 +89,14 @@ class Connection(ABC):
         :param params: the values to bind to the execution of the given SQL
         :param commit: commit the changes to the database after execution, defaults to value given in constructor
         """
-        pass  # pragma: no cover
+        commit = commit if commit is not None else self._auto_commit
+        cursor = self._cnx.cursor()
+        self._execute(cursor, sql, params)
+        affected = cursor.rowcount
+        if commit:
+            self.commit()
+        cursor.close()
+        return affected
 
 
 class ConnectionPool(ABC):
@@ -95,6 +113,25 @@ class ConnectionPool(ABC):
         """
         self.logger = logging.getLogger(__name__)
         self._raw_db_url = db_url
+
+    def _parse_additional_arg_int(self, name: str, default: int, additional_args) -> int:
+        if name not in additional_args:
+            self.logger.debug(f'No "{name}" specified, defaulting to {default}')
+            return default
+        try:
+            assert len(additional_args.get(name)) == 1
+            return int(additional_args.get(name)[0])
+        except AssertionError:
+            raise ConfigurationError(f'Invalid "{name}": only a single value must be specified')
+        except ValueError:
+            raise ConfigurationError(f'Invalid "{name}": must be integer')
+
+    @staticmethod
+    def _raise_for_unexpected_ars(expected_args: List[str], additional_args):
+        for name in additional_args.keys():
+            if name in expected_args:
+                continue
+            raise ConfigurationError(f'Unexpected argument "{name}" specified in additional arguments')
 
     @property
     @abstractmethod

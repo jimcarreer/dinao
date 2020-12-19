@@ -1,5 +1,6 @@
 DINAO Is Not An ORM
 ===================
+|build-status| |cover-status| |pyver-status| |pypiv-status| |coding-style|
 
 What is DINAO? Well it might be easier to tell you what its not.  DINAO Is Not
 An ORM.  It's not that I hate ORMs, I think in the right context they can be
@@ -24,14 +25,16 @@ seems rather archaic after all.
 Installation
 ------------
 
-We're not yet in pypi as this is a very early Beta.  Installing from source is
-recommended:
+Install via pip:
 
 .. code-block::
 
-    $ git clone git@github.com:jimcarreer/dinao.git
-    $ cd dinao/
-    $ pip install .
+    $ pip install dinao
+
+You will also need to install your backend driver.  Backends + drivers supported are:
+
+* Sqlite3 (from the standard lib)
+* PostgreSQL via psycopg2
 
 Basic Usage
 ***********
@@ -42,6 +45,9 @@ and query parameterization.
 
 .. code-block:: python
 
+    # pip install dinao
+    # pip install psycopg2-binary
+
     from dinao.backend import create_connection_pool
     from dinao.binding import FunctionBinder
 
@@ -51,9 +57,9 @@ and query parameterization.
 
 
     @binder.execute(
-        "CREATE TABLE IF NOT EXISTS my_table (\n"
-        "  name VARCHAR(32) PRIMARY KEY,\n"
-        "  value INTEGER DEFAULT 0\n"
+        "CREATE TABLE IF NOT EXISTS my_table ( "
+        "  name VARCHAR(32) PRIMARY KEY, "
+        "  value INTEGER DEFAULT 0"
         ")"
     )
     def make_table():
@@ -61,9 +67,9 @@ and query parameterization.
 
 
     @binder.execute(
-        "INSERT INTO my_table (name, value) VALUES(#{name}, #{value})\n"
-        "ON CONFLICT (name) DO UPDATE\n"
-        "  SET value = #{value}\n"
+        "INSERT INTO my_table (name, value) VALUES(#{name}, #{value}) "
+        "ON CONFLICT (name) DO UPDATE "
+        "  SET value = #{value} "
         "WHERE my_table.name = #{name}"
     )
     def upsert(name: str, value: int):
@@ -88,3 +94,14 @@ and query parameterization.
         for row in search("test%"):
             n, v = row
             print(f"{n}: {v}")
+
+.. |build-status| image:: https://api.travis-ci.org/jimcarreer/dinao.svg?branch=main
+   :target: https://travis-ci.org/jimcarreer/dinao
+.. |cover-status| image:: https://codecov.io/gh/jimcarreer/dinao/dinao/branch/main/graph/badge.svg
+   :target: https://codecov.io/gh/jimcarreer/dinao
+.. |pyver-status| image:: https://img.shields.io/pypi/pyversions/dinao
+   :target: https://pypi.org/project/dinao/
+.. |pypiv-status| image:: https://badge.fury.io/py/dinao.svg?dummy
+   :target: https://pypi.org/project/dinao/
+.. |coding-style| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black

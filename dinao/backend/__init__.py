@@ -5,9 +5,10 @@ from urllib.parse import urlparse
 from dinao.backend.base import Connection, ConnectionPool, ResultSet
 from dinao.backend.errors import ConfigurationError, UnsupportedBackend
 from dinao.backend.postgres import ConnectionPoolPSQLPsycopg2
+from dinao.backend.sqlite import ConnectionPoolSQLite3
 
 
-ENGINE_DEFAULTS = {"postgresql": "psycopg2"}
+ENGINE_DEFAULTS = {"postgresql": "psycopg2", "sqlite3": None}
 
 
 def create_connection_pool(db_url: str) -> ConnectionPool:
@@ -31,6 +32,8 @@ def create_connection_pool(db_url: str) -> ConnectionPool:
     backend = backend[0]
     if backend == "postgresql" and engine == "psycopg2":
         return ConnectionPoolPSQLPsycopg2(db_url)
+    if backend == "sqlite3" and engine is None:
+        return ConnectionPoolSQLite3(db_url)
     raise UnsupportedBackend(f'The backend+engine "{parsed_url.scheme}" is not supported')
 
 

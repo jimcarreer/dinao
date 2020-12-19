@@ -1,4 +1,4 @@
-"""SQL Statements to be used in testing backend implementations."""
+"""SQL statements to be used in testing postgres implementations."""
 
 TERMINATE_DB_CONNS = """SELECT pg_terminate_backend(pg_stat_activity.pid)
 FROM pg_stat_activity
