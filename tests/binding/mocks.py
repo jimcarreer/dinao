@@ -10,6 +10,7 @@ class MockResultSet(ResultSet):
     """Mock implementation of the ResultSet interface for use in testing."""
 
     def __init__(self, results: List[tuple], affects: int, columns: Tuple[str]):  # noqa: D107
+        super().__init__(cursor=None)
         self._results = results
         self._columns = columns
         self._affects = affects
@@ -34,7 +35,7 @@ class MockConnection(Connection):
 
         :param results_stack: a list of mock results to return from calls to query() and execute()
         """
-        super().__init__()
+        super().__init__(cnx=None)
         self.query_stack = []
         self.released = False
         self.committed = 0
@@ -71,6 +72,9 @@ class MockConnection(Connection):
     def assert_clean(self):  # noqa: D102
         assert self.released, "Connection never released"
         assert self.committed > 0, "Connection did not have commit called"
+
+    def _execute(self, cursor, sql: str, params: tuple = None):
+        pass  # pragma: no cover
 
 
 class MockConnectionPool(ConnectionPool):
