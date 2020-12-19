@@ -10,7 +10,8 @@ class ConnectionSQLite3(Connection):
 
     def _execute(self, cursor, sql: str, params: tuple = None):
         if params:
-            return cursor.execute(sql, params)
+            cursor.execute(sql, params)
+            return
         cursor.execute(sql)
 
 

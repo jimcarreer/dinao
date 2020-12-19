@@ -18,9 +18,9 @@ def make_table():
 
 
 @binder.execute(
-    "INSERT INTO my_table (name, value) VALUES(#{name}, #{value})\n"
-    "ON CONFLICT (name) DO UPDATE\n"
-    "  SET value = #{value}\n"
+    "INSERT INTO my_table (name, value) VALUES(#{name}, #{value}) "
+    "ON CONFLICT (name) DO UPDATE "
+    "  SET value = #{value} "
     "WHERE my_table.name = #{name}"
 )
 def upsert(name: str, value: int):
