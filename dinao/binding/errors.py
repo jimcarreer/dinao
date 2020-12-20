@@ -7,6 +7,12 @@ class BindingError(Exception):
     pass
 
 
+class TemplateError(BindingError):
+    """Raised when parsing a template fails."""
+
+    pass
+
+
 class FunctionAlreadyBound(BindingError):
     """Raised when a function is bound more than once to a query, execution, or transaction."""
 

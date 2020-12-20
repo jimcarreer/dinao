@@ -117,19 +117,19 @@ def test_double_binding_raises(binder_and_pool: Tuple[FunctionBinder, MockConnec
 
         @binder.execute("UPDATE table SET col = #{arg1}")
         @binder.execute("INSERT INTO TABLE (#{arg1})")
-        def should_raise(arg1: str):
+        def should_raise_1(arg1: str):
             pass  # pragma: no cover
 
     with pytest.raises(FunctionAlreadyBound, match=match):
 
         @binder.execute("UPDATE table SET col = #{arg1}")
         @binder.query("SELECT * FROM table WHERE col = #{arg1})")
-        def should_raise(arg1: str):
+        def should_raise_2(arg1: str):
             pass  # pragma: no cover
 
     with pytest.raises(FunctionAlreadyBound, match=match):
 
         @binder.execute("UPDATE table SET col = #{arg1}")
         @binder.transaction()
-        def should_raise(arg1: str):
+        def should_raise_3(arg1: str):
             pass  # pragma: no cover

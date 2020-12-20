@@ -2,10 +2,12 @@
 
 import typing
 
+from dinao.binding.errors import TemplateError
+
 # fmt: off
 from pyparsing import (  # noqa: I101
     alphanums, alphas, printables,
-    Combine, Forward, Group, OneOrMore, Suppress, White, Word, ZeroOrMore
+    Combine, Forward, Group, OneOrMore, Suppress, White, Word, ZeroOrMore, ParseBaseException
 )
 # fmt: on
 
@@ -39,8 +41,10 @@ class Template:
         self._mung_symbol = mung_symbol
         self._argument_names = []
         self._munged_template = ""
-        # TODO: Try/Except here, rethrow a more descriptive error with explict class
-        nodes = self.GRAMMAR.parseString(sql_template, parseAll=True)
+        try:
+            nodes = self.GRAMMAR.parseString(sql_template, parseAll=True)
+        except ParseBaseException as pbx:
+            raise TemplateError(f"{pbx.msg}:\n{pbx.line}\n{(' '*(pbx.col -1 ))}^")
         for node in nodes:
             if not isinstance(node, str):
                 node = tuple(map(str, node))
@@ -50,7 +54,7 @@ class Template:
         self._argument_names = tuple(self._argument_names)
 
     def __str__(self) -> str:
-        """Simple representation of the template."""
+        """Return a simple representation of the template."""
         return self._sql_template
 
     @property

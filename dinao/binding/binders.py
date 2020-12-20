@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from typing import Tuple
 
 from dinao.backend.base import Connection, ConnectionPool
-from dinao.binding.errors import BadReturnType, FunctionAlreadyBound
+from dinao.binding.errors import BadReturnType, FunctionAlreadyBound, TemplateError
 from dinao.binding.templating import Template
 
 
@@ -20,12 +20,25 @@ class FunctionBinder:
         """
         self._cnx_pool = cnx_pool
         self._active_cnx = None
+        self._verbose_trace = False
 
-    @staticmethod
-    def _raise_for_multi_binding(func: callable):
+    def _suppressed_raise(self, exc: Exception):
+        if self._verbose_trace:
+            raise exc
+        # Try to cut down on the traces so the user gets closer to the issue in their code
+        raise exc.with_traceback(None) from exc
+
+    def _raise_for_multi_binding(self, func: callable):
         if isinstance(func, BoundedFunction):
             name = func.bounded_function.__name__
-            raise FunctionAlreadyBound(f'The function {name} has already been bounded by {func}')
+            error = f"The function {name} has already been bounded by {func}"
+            self._suppressed_raise(FunctionAlreadyBound(error))
+
+    def _make_template(self, sql: str):
+        try:
+            return Template(sql, self._cnx_pool.mung_symbol)
+        except TemplateError as exc:
+            self._suppressed_raise(exc)
 
     def execute(self, sql: str) -> callable:
         """Binds a given function to a given SQL template.
@@ -45,12 +58,12 @@ class FunctionBinder:
 
         :param sql: a SQL template to bind the function execution to
         :returns: a decorator expecting a callable
-        :raises: BadReturnType
+        :raises: BadReturnType, FunctionAlreadyBound
         """
         # fmt: off
         def decorated(func: callable):
             self._raise_for_multi_binding(func)
-            template = Template(sql, self._cnx_pool.mung_symbol)
+            template = self._make_template(sql)
             return BoundedExecution(self, template, func)
         return decorated
         # fmt: on
@@ -71,12 +84,12 @@ class FunctionBinder:
 
         :param sql: a SQL template to bind the function execution to
         :returns: a decorator expecting a callable
-        :raises: NotImplementedError
+        :raises: NotImplementedError, FunctionAlreadyBound
         """
         # fmt: off
         def decorated(func: callable):
             self._raise_for_multi_binding(func)
-            template = Template(sql, self._cnx_pool.mung_symbol)
+            template = self._make_template(sql)
             return BoundedQuery(self, template, func)
         return decorated
         # fmt: on
@@ -110,7 +123,7 @@ class FunctionBinder:
                 return my_update(stat=stat)
 
         :returns: a decorator expecting a callable
-        :raises: NotImplementedError
+        :raises: NotImplementedError, FunctionAlreadyBound
         """
         # fmt: off
         def decorated(func: callable):
@@ -161,7 +174,7 @@ class BoundedFunction(ABC):
 
     @property
     def bounded_function(self) -> callable:
-        """Returns the original callable this object binds."""
+        """Return the original callable this object binds."""
         return self._func
 
 
@@ -192,8 +205,8 @@ class BoundedSQLFunction(BoundedFunction):
             values.append(value)
         return tuple(values)
 
-    def __str__(self):
-        """Simple representation of a SQL bound function."""
+    def __str__(self) -> str:
+        """Return a simple representation of a SQL bound function."""
         return f"{self.__class__.__name__} of {self._sql_template} ({self.bounded_function.__name__})"
 
     @abstractmethod
@@ -270,8 +283,8 @@ class BoundedExecution(BoundedSQLFunction):
 class BoundedTransaction(BoundedFunction):
     """Implementation of a bounded function whose call is done within a database transaction."""
 
-    def __str__(self):
-        """Simple representation of a transaction bound function."""
+    def __str__(self) -> str:
+        """Return a simple representation of a transaction bound function."""
         return f"{self.__class__.__name__} ({self.bounded_function.__name__})"
 
     def __call__(self, *args, **kwargs):
