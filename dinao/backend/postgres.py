@@ -19,11 +19,11 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPool):
 
         The db_url is expected to be in the following format::
 
-            "postgres+psycopg2://{username}:{password}@{hostname}:{port}/{db_name}?{optional_ars}"
+            "postgres+psycopg2://{username}:{password}@{hostname}:{port}/{db_name}?{optional_args}"
 
-        Supported `optional_ars` include:
+        Supported `optional_args` include:
 
-            * schema, sets the search path of the connections, defaults to "public"
+            * schema, a list of strings that sets the search path of the connections, defaults to "public"
             * pool_min_conn, an integer specifying the minimum connections to keep in the pool, defaults to 1
             * pool_max_conn, an integer specifying the maximum connections to keep in the pool, defaults to 1
             * pool_threaded, a boolean specifying a threaded pool should be used, defaults to False

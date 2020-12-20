@@ -7,6 +7,12 @@ class BindingError(Exception):
     pass
 
 
+class FunctionAlreadyBound(BindingError):
+    """Raised when a function is bound more than once to a query, execution, or transaction."""
+
+    pass
+
+
 class SignatureError(BindingError):
     """Base exception for binding errors related to function signature inspection."""
 

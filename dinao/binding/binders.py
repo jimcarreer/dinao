@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from typing import Tuple
 
 from dinao.backend.base import Connection, ConnectionPool
-from dinao.binding.errors import BadReturnType
+from dinao.binding.errors import BadReturnType, FunctionAlreadyBound
 from dinao.binding.templating import Template
 
 
@@ -20,6 +20,12 @@ class FunctionBinder:
         """
         self._cnx_pool = cnx_pool
         self._active_cnx = None
+
+    @staticmethod
+    def _raise_for_multi_binding(func: callable):
+        if isinstance(func, BoundedFunction):
+            name = func.bounded_function.__name__
+            raise FunctionAlreadyBound(f'The function {name} has already been bounded by {func}')
 
     def execute(self, sql: str) -> callable:
         """Binds a given function to a given SQL template.
@@ -43,6 +49,7 @@ class FunctionBinder:
         """
         # fmt: off
         def decorated(func: callable):
+            self._raise_for_multi_binding(func)
             template = Template(sql, self._cnx_pool.mung_symbol)
             return BoundedExecution(self, template, func)
         return decorated
@@ -68,6 +75,7 @@ class FunctionBinder:
         """
         # fmt: off
         def decorated(func: callable):
+            self._raise_for_multi_binding(func)
             template = Template(sql, self._cnx_pool.mung_symbol)
             return BoundedQuery(self, template, func)
         return decorated
@@ -106,6 +114,7 @@ class FunctionBinder:
         """
         # fmt: off
         def decorated(func: callable):
+            self._raise_for_multi_binding(func)
             return BoundedTransaction(self, func)
         return decorated
         # fmt: on
@@ -150,6 +159,11 @@ class BoundedFunction(ABC):
     def __call__(self, *args, **kwargs):  # noqa: D102
         pass  # pragma: no cover
 
+    @property
+    def bounded_function(self) -> callable:
+        """Returns the original callable this object binds."""
+        return self._func
+
 
 class BoundedSQLFunction(BoundedFunction):
     """Abstract class for common behaviors between functions bound to templated SQL."""
@@ -177,6 +191,10 @@ class BoundedSQLFunction(BoundedFunction):
                 cached[arg_id] = value
             values.append(value)
         return tuple(values)
+
+    def __str__(self):
+        """Simple representation of a SQL bound function."""
+        return f"{self.__class__.__name__} of {self._sql_template} ({self.bounded_function.__name__})"
 
     @abstractmethod
     def __call__(self, *args, **kwargs):  # noqa: D102
@@ -251,6 +269,10 @@ class BoundedExecution(BoundedSQLFunction):
 
 class BoundedTransaction(BoundedFunction):
     """Implementation of a bounded function whose call is done within a database transaction."""
+
+    def __str__(self):
+        """Simple representation of a transaction bound function."""
+        return f"{self.__class__.__name__} ({self.bounded_function.__name__})"
 
     def __call__(self, *args, **kwargs):
         """Execute the decorated / bound function with a single database connection / transaction.

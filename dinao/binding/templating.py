@@ -49,6 +49,10 @@ class Template:
             self._munged_template += node
         self._argument_names = tuple(self._argument_names)
 
+    def __str__(self) -> str:
+        """Simple representation of the template."""
+        return self._sql_template
+
     @property
     def arguments(self) -> typing.Tuple[typing.Tuple[str]]:
         """Return a tuple of tuples representing the argument identifiers used in the template."""

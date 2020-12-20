@@ -108,7 +108,12 @@ class ConnectionPool(ABC):
 
         The db_url is expected to be in the following format::
 
-            "{db_backend}+{driver}://{username}:{password}@{hostname}:{port}/{db_name}?{optional_ars}"
+            "{db_backend}+{driver}://{username}:{password}@{hostname}:{port}/{db_name}?{optional_args}"
+
+        Supported `optional_args` include:
+
+            * defer, a boolean specifying pool initialization should be deferred until a connection is needed, defaults
+              to False
 
         :param db_url: a url with the described format
         """
