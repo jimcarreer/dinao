@@ -13,9 +13,15 @@ import pytest
         ("oracle://user:pass@host:4444", "not supported", UnsupportedBackend),
         ("postgresql+psycopg3://user:pass@host:4444", "not supported", UnsupportedBackend),
         ("postgresql://user:pass@host:4444", "name is required but missing", ConfigurationError),
-        ("postgresql://user:pass@host:4444/dbname?pool_max_conn=ABC", "must be integer", ConfigurationError),
-        ("postgresql://user:pass@host:4444/dbname?pool_min_conn=ABC", "must be integer", ConfigurationError),
-        ("postgresql://user:pass@host:4444/dbname?weird_arg=XYZ", "Unexpected argument", ConfigurationError),
+        ("postgresql://user:pass@host:4444/dbname?pool_max_conn=ABC", "must be int", ConfigurationError),
+        ("postgresql://user:pass@host:4444/dbname?pool_min_conn=ABC", "must be int", ConfigurationError),
+        ("postgresql://user:pass@host:4444/dbname?weird=XYZ&defer=False", "Unexpected argument", ConfigurationError),
+        ("postgresql://user:pass@host:4444/dbname?defer=JUNK", "must be bool", ConfigurationError),
+        (
+            "postgresql://user:pass@host:4444/dbname?weird=JUNK&pool_threaded=True",
+            "Unexpected argument",
+            ConfigurationError,
+        ),
         (
             "postgresql://user:pass@host:4444/dbname?pool_min_conn=2&pool_max_conn=1",
             "pool_max_conn must be greater or equal to pool_min_conn",

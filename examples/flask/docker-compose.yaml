@@ -1,0 +1,19 @@
+version: "3.7"
+
+services:
+
+  postgres:
+    image: postgres:11.4-alpine
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_pass
+      POSTGRES_DB: test_db
+    ports:
+      - "5432"
+
+  dinao_example:
+    build: .
+    depends_on:
+      - postgres
+    ports:
+      - "5000:5000"
