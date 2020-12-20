@@ -111,10 +111,25 @@ def test_binder_execute_bad_type(binder_and_pool: Tuple[FunctionBinder, MockConn
 def test_double_binding_raises(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
     """Tests that binding a function more than once results in an error."""
     binder, _ = binder_and_pool
+    match = "has already been bounded by"
 
-    with pytest.raises(FunctionAlreadyBound, match="has already been bounded by"):
+    with pytest.raises(FunctionAlreadyBound, match=match):
 
-        @binder.execute("UPDATE TABLE SET col = #{arg1}")
+        @binder.execute("UPDATE table SET col = #{arg1}")
         @binder.execute("INSERT INTO TABLE (#{arg1})")
+        def should_raise(arg1: str):
+            pass  # pragma: no cover
+
+    with pytest.raises(FunctionAlreadyBound, match=match):
+
+        @binder.execute("UPDATE table SET col = #{arg1}")
+        @binder.query("SELECT * FROM table WHERE col = #{arg1})")
+        def should_raise(arg1: str):
+            pass  # pragma: no cover
+
+    with pytest.raises(FunctionAlreadyBound, match=match):
+
+        @binder.execute("UPDATE table SET col = #{arg1}")
+        @binder.transaction()
         def should_raise(arg1: str):
             pass  # pragma: no cover
