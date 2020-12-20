@@ -21,9 +21,17 @@ You simply need to run:
 Special Notes
 *************
 
-To prevent connections and underlying connection pools from being shared among
-worker threads, it is recommended to add the ``defer=True`` argument to your
-connection URL as an extra argument.  It is also recommended, when using DINAO
-with Flask (and other web frameworks) in production, that your connection pool
-minimum and maximum connections are both set to 1 and the use of WSGI workers
-used for scaling.
+For applications making use of WSGI, a pool of connections is generally not
+required, as the pool should not be shared among workers.  Instead set your
+minimum / maximum pool size to 1.
+
+When using ``--preload`` with `gunicorn`_, or similar facilities in other WSGI
+servers, it is important to use the ``defer=True`` (`example`_) connection pool
+argument in order to keep the same connections and underlying pool from being
+reused among worker processes.
+
+See this `explanation_` for more information on this subject.
+
+.. _gunicorn: https://docs.gunicorn.org/en/stable/settings.html#preload-app
+.. _example: https://github.com/jimcarreer/dinao/blob/main/examples/flask/app/dbi.py#L4
+.. _explanation: https://davidcaron.dev/sqlalchemy-multiple-threads-and-processes/
