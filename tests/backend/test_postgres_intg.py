@@ -12,7 +12,7 @@ from tests.backend import postgres_test_sql as test_sql
 
 @pytest.mark.parametrize(
     "extra_args",
-    ["", "pool_min_conn=1", "pool_min_conn=3", "pool_min_conn=1&pool_max_conn=3"],
+    ["", "pool_min_conn=1", "pool_min_conn=1&pool_max_conn=3"],
 )
 def test_backend_impls(tmp_psql_db_url: str, extra_args: str):
     """Tests the basic backend implementations for postgres."""

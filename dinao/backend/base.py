@@ -4,6 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import List, Tuple
+from urllib.parse import parse_qs, urlparse
 
 from dinao.backend.errors import ConfigurationError
 
@@ -113,25 +114,35 @@ class ConnectionPool(ABC):
         """
         self.logger = logging.getLogger(__name__)
         self._raw_db_url = db_url
-
-    def _parse_additional_arg_int(self, name: str, default: int, additional_args) -> int:
-        if name not in additional_args:
-            self.logger.debug(f'No "{name}" specified, defaulting to {default}')
-            return default
-        try:
-            assert len(additional_args.get(name)) == 1
-            return int(additional_args.get(name)[0])
-        except AssertionError:
-            raise ConfigurationError(f'Invalid "{name}": only a single value must be specified')
-        except ValueError:
-            raise ConfigurationError(f'Invalid "{name}": must be integer')
+        self._db_url = urlparse(self._raw_db_url)
+        self._args = parse_qs(self._db_url.query)
+        self._defer_pool = self._get_arg("defer", bool, False)
 
     @staticmethod
-    def _raise_for_unexpected_ars(expected_args: List[str], additional_args):
-        for name in additional_args.keys():
-            if name in expected_args:
-                continue
-            raise ConfigurationError(f'Unexpected argument "{name}" specified in additional arguments')
+    def _strict_bool(value: str):
+        if value.lower() not in ["true", "false"]:
+            raise ValueError()
+        return value.lower() == "true"
+
+    def _raise_for_unexpected_args(self):
+        unexpected = ",".join(self._args.keys())
+        if unexpected:
+            raise ConfigurationError(f"Unexpected argument(s): {unexpected}")
+
+    def _get_arg(self, name: str, expected_type, default=None):
+        if name not in self._args:
+            self.logger.debug(f'No "{name}" specified, defaulting to {default}')
+            return default
+        caster = expected_type if expected_type is not bool else self._strict_bool
+        try:
+            if caster != list:
+                assert len(self._args.get(name)) == 1
+                return caster(self._args.pop(name)[0])
+            return self._args.pop(name)
+        except AssertionError:
+            raise ConfigurationError(f'Invalid argument "{name}": only a single value must be specified')
+        except ValueError:
+            raise ConfigurationError(f'Invalid argument "{name}": must be {expected_type.__name__}')
 
     @property
     @abstractmethod

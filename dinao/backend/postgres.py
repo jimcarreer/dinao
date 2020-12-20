@@ -1,7 +1,5 @@
 """Implementation of postgres backends."""
 
-from urllib.parse import parse_qs, urlparse
-
 from dinao.backend.base import Connection, ConnectionPool
 from dinao.backend.errors import BackendEngineNotInstalled, ConfigurationError
 
@@ -27,7 +25,8 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPool):
 
             * schema, sets the search path of the connections, defaults to "public"
             * pool_min_conn, an integer specifying the minimum connections to keep in the pool, defaults to 1
-            * pool_max_conn, an integer specifying the maximum connections to keep in the pool, defaults to 5
+            * pool_max_conn, an integer specifying the maximum connections to keep in the pool, defaults to 1
+            * pool_threaded, a boolean specifying a threaded pool should be used, defaults to False
 
         :param db_url: a url with the described format
         :raises: ConfigurationError, BackendEngineNotInstalled
@@ -38,31 +37,38 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPool):
         except ModuleNotFoundError:  # pragma: no cover
             issue = "Module psycopg2 not installed, cannot create connection pool"
             raise BackendEngineNotInstalled(issue)
-        self._cnx_kwargs = self._url_to_cnx_kwargs(db_url)
-        self._pool = psycopg2.pool.ThreadedConnectionPool(**self._cnx_kwargs)
+        self._cnx_kwargs = self._mk_cnx_kwargs()
+        self._pool_class = psycopg2.pool.SimpleConnectionPool
+        if self._get_arg("pool_threaded", bool, False):
+            self._pool_class = psycopg2.pool.ThreadedConnectionPool
+        self._pool_impl = None
+        self._raise_for_unexpected_args()
+        if not self._defer_pool:
+            assert self._pool
 
-    def _url_to_cnx_kwargs(self, url: str):
-        db_url = urlparse(url)
-        dbname = db_url.path.strip("/")
+    @property
+    def _pool(self):
+        if self._pool_impl is None:
+            self._pool_impl = self._pool_class(**self._cnx_kwargs)
+        return self._pool_impl
+
+    def _mk_cnx_kwargs(self):
+        dbname = self._db_url.path.strip("/")
         if not dbname:
             raise ConfigurationError("Database name is required but missing")
-        additional_args = parse_qs(db_url.query)
-        if "schema" not in additional_args:
-            self.logger.debug("Schema not specified, defaulting to public")
-        schema = ",".join(additional_args.get("schema", ["public"]))
-        max_c = self._parse_additional_arg_int("pool_max_conn", 10, additional_args)
-        min_c = self._parse_additional_arg_int("pool_min_conn", 1, additional_args)
+        schema = ",".join(self._get_arg("schema", list, ["public"]))
+        max_c = self._get_arg("pool_max_conn", int, 1)
+        min_c = self._get_arg("pool_min_conn", int, 1)
         if max_c < min_c:
             raise ConfigurationError("The argument pool_max_conn must be greater or equal to pool_min_conn")
-        self._raise_for_unexpected_ars(["pool_max_conn", "pool_min_conn", "schema"], additional_args)
         return {
             "maxconn": max_c,
             "minconn": min_c,
             "dbname": dbname,
-            "user": db_url.username,
-            "password": db_url.password,
-            "host": db_url.hostname,
-            "port": db_url.port,
+            "user": self._db_url.username,
+            "password": self._db_url.password,
+            "host": self._db_url.hostname,
+            "port": self._db_url.port,
             "options": f"-c search_path={schema}",
         }
 

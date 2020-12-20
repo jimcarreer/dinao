@@ -1,6 +1,5 @@
 """Implementation of SQLite backends."""
 import sqlite3
-from urllib.parse import parse_qs, urlparse
 
 from dinao.backend.base import Connection, ConnectionPool
 
@@ -32,12 +31,10 @@ class ConnectionPoolSQLite3(ConnectionPool):
         """
         super().__init__(db_url)
         self._cnx_kwargs = self._url_to_cnx_kwargs(db_url)
+        self._raise_for_unexpected_args()
 
     def _url_to_cnx_kwargs(self, url: str):
-        db_url = urlparse(url)
-        additional_args = parse_qs(db_url.query)
-        self._raise_for_unexpected_ars([], additional_args)
-        return {"database": db_url.path}
+        return {"database": self._db_url.path}
 
     def lease(self) -> Connection:  # noqa: D102
         inner_cnx = sqlite3.connect(**self._cnx_kwargs)
