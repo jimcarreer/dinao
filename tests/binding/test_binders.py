@@ -3,7 +3,7 @@
 from typing import List, Tuple
 
 from dinao.binding.binders import FunctionBinder
-from dinao.binding.errors import BadReturnType, FunctionAlreadyBound
+from dinao.binding.errors import BadReturnType, FunctionAlreadyBound, MissingTemplateArgument
 
 import pytest
 
@@ -133,3 +133,14 @@ def test_double_binding_raises(binder_and_pool: Tuple[FunctionBinder, MockConnec
         @binder.transaction()
         def should_raise_3(arg1: str):
             pass  # pragma: no cover
+
+
+def test_args_mismatch_raises(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests an error is raised if a template is bound to a function without a matching argument."""
+    binder, _ = binder_and_pool
+
+    with pytest.raises(MissingTemplateArgument, match="specified in template but is not an argument of"):
+
+        @binder.execute("INSERT INTO table (#{arg})")
+        def should_raise_4(some_arg: str):
+            pass

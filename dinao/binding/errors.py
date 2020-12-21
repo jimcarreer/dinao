@@ -29,3 +29,9 @@ class BadReturnType(SignatureError):
     """Raised when a return hint specifies a type that cannot be used for mapping in the context of the binding."""
 
     pass
+
+
+class MissingTemplateArgument(SignatureError):
+    """Raised when a template specifies an argument not found in its bounded function's signature."""
+
+    pass

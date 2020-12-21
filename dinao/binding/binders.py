@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from typing import Tuple
 
 from dinao.backend.base import Connection, ConnectionPool
-from dinao.binding.errors import BadReturnType, FunctionAlreadyBound, TemplateError
+from dinao.binding.errors import BadReturnType, FunctionAlreadyBound, MissingTemplateArgument, TemplateError
 from dinao.binding.templating import Template
 
 
@@ -184,6 +184,10 @@ class BoundedSQLFunction(BoundedFunction):
     def __init__(self, binder: FunctionBinder, sql_template: Template, func: callable):  # noqa: D107
         super().__init__(binder, func)
         self._sql_template = sql_template
+        for arg_id in sql_template.arguments:
+            if arg_id[0] not in self._sig.parameters:
+                error = f"Argument '{arg_id[0]}' specified in template but is not an argument of {func.__name__}"
+                raise MissingTemplateArgument(error)
 
     @staticmethod
     def _resolve_value(arg_id: Tuple[str], root_args: dict):
