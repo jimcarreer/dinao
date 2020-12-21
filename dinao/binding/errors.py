@@ -7,6 +7,18 @@ class BindingError(Exception):
     pass
 
 
+class TemplateError(BindingError):
+    """Raised when parsing a template fails."""
+
+    pass
+
+
+class FunctionAlreadyBound(BindingError):
+    """Raised when a function is bound more than once to a query, execution, or transaction."""
+
+    pass
+
+
 class SignatureError(BindingError):
     """Base exception for binding errors related to function signature inspection."""
 
@@ -15,5 +27,11 @@ class SignatureError(BindingError):
 
 class BadReturnType(SignatureError):
     """Raised when a return hint specifies a type that cannot be used for mapping in the context of the binding."""
+
+    pass
+
+
+class MissingTemplateArgument(SignatureError):
+    """Raised when a template specifies an argument not found in its bounded function's signature."""
 
     pass

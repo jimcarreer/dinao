@@ -3,7 +3,7 @@
 from typing import List, Tuple
 
 from dinao.binding.binders import FunctionBinder
-from dinao.binding.errors import BadReturnType
+from dinao.binding.errors import BadReturnType, FunctionAlreadyBound, MissingTemplateArgument, TemplateError
 
 import pytest
 
@@ -105,4 +105,53 @@ def test_binder_execute_bad_type(binder_and_pool: Tuple[FunctionBinder, MockConn
 
         @binder.execute("INSERT INTO TABLE (#{arg1})")
         def should_raise(arg1: str) -> List:
+            pass  # pragma: no cover
+
+
+def test_binder_raises_for_template(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests that a bad template causes an error at binding time."""
+    binder, _ = binder_and_pool
+
+    with pytest.raises(TemplateError, match="#{arg1"):
+
+        @binder.execute("INSERT INTO table #{arg1")
+        def should_raise_0(arg1: str) -> List:
+            pass  # pragma: no cover
+
+
+def test_double_binding_raises(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests that binding a function more than once results in an error."""
+    binder, _ = binder_and_pool
+    match = "has already been bounded by"
+
+    with pytest.raises(FunctionAlreadyBound, match=match):
+
+        @binder.execute("UPDATE table SET col = #{arg1}")
+        @binder.execute("INSERT INTO TABLE (#{arg1})")
+        def should_raise_1(arg1: str):
+            pass  # pragma: no cover
+
+    with pytest.raises(FunctionAlreadyBound, match=match):
+
+        @binder.execute("UPDATE table SET col = #{arg1}")
+        @binder.query("SELECT * FROM table WHERE col = #{arg1})")
+        def should_raise_2(arg1: str):
+            pass  # pragma: no cover
+
+    with pytest.raises(FunctionAlreadyBound, match=match):
+
+        @binder.execute("UPDATE table SET col = #{arg1}")
+        @binder.transaction()
+        def should_raise_3(arg1: str):
+            pass  # pragma: no cover
+
+
+def test_args_mismatch_raises(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests an error is raised if a template is bound to a function without a matching argument."""
+    binder, _ = binder_and_pool
+
+    with pytest.raises(MissingTemplateArgument, match="specified in template but is not an argument of"):
+
+        @binder.execute("INSERT INTO table (#{arg})")
+        def should_raise_4(some_arg: str):
             pass  # pragma: no cover
