@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 tries=0
 while ! nc -z postgres 5432; do
     echo "Trying to connect to PSQL at 5432..."

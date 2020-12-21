@@ -6,10 +6,12 @@ ENV PYTHONUNBUFFERED 1
 RUN apt-get update -y
 RUN apt-get install -y netcat
 RUN pip install --upgrade pip
-RUN pip install dinao>=0.3.0
 RUN pip install flask
 RUN pip install psycopg2-binary
 RUN pip install gunicorn
+
+COPY ./dinao-tmp/ /dinao/
+RUN pip install /dinao/
 
 COPY ./app/ /usr/src/app/
 COPY ./entry.sh /usr/src/app/

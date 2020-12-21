@@ -13,7 +13,7 @@ You simply need to run:
 
 .. code-block::
 
-    $ docker-compose build
+    $ ./build.sh
     $ docker-compose up
     $ pip install requests
     $ python3 tester.py

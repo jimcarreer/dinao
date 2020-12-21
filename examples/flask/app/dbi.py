@@ -32,3 +32,20 @@ def upsert(name: str, value: int) -> int:
 )
 def search(search_term: str, page: dict):
     pass
+
+
+@binder.transaction()
+def sum_for(search_term: str, page_size: int = 5) -> dict:
+    page = {"limit": page_size, "offset": 0}
+    entries = search(search_term, page)
+    summed = 0
+    rows = 0
+    pages = 0
+    while entries:
+        pages += 1
+        for row in entries:
+            summed += row[1]
+            rows += 1
+        page["offset"] += page["limit"]
+        entries = search(search_term, page)
+    return {"summed": summed, "rows": rows, "pages": pages, "page_size": page_size}
