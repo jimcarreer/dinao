@@ -31,3 +31,4 @@ def test_backend_impls(tmp_psql_db_url: str, extra_args: str):
         assert (7, 14) == (row[2], row[3])
         assert 2 == len(res.fetchall())
     cnx_pool.release(cnx)
+    cnx_pool.dispose()

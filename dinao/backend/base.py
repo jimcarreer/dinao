@@ -164,3 +164,8 @@ class ConnectionPool(ABC):
     def release(self, cnx: Connection):
         """Release a connection back to the underlying pool."""
         pass  # pragma: no cover
+
+    @abstractmethod
+    def dispose(self):
+        """Close the pool and clean up any resources it was using."""
+        pass  # pragma: no cover

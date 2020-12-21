@@ -88,6 +88,7 @@ class MockConnectionPool(ConnectionPool):
         super().__init__("mock://user:pass@hostname/dbname?schema=schema")
         self.connection_stack = []
         self.results_stack = results_stack
+        self.disposed = 0
 
     @property
     def mung_symbol(self) -> str:  # noqa: D102
@@ -102,3 +103,6 @@ class MockConnectionPool(ConnectionPool):
         for known_cnx in self.connection_stack:
             if cnx == known_cnx:
                 cnx.released = True
+
+    def dispose(self):  # noqa: D102
+        self.disposed += 1

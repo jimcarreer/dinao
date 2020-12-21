@@ -79,6 +79,10 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPool):
     def release(self, cnx: Connection):  # noqa: D102
         self._pool.putconn(cnx._cnx)
 
+    def dispose(self):  # noqa: D102
+        if not self._pool.closed:
+            self._pool.closeall()
+
     @property
     def mung_symbol(self) -> str:  # noqa: D102
         return "%s"

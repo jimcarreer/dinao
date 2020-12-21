@@ -23,6 +23,7 @@ def binder_and_pool(request):
     pool = MockConnectionPool(result_stack)
     binder = FunctionBinder(pool)
     yield binder, pool
+    pool.dispose()
 
 
 @pytest.mark.parametrize(

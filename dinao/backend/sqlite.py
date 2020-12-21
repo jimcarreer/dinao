@@ -43,6 +43,9 @@ class ConnectionPoolSQLite3(ConnectionPool):
     def release(self, cnx: Connection):  # noqa: D102
         cnx._cnx.close()
 
+    def dispose(self):  # noqa: D102
+        return
+
     @property
     def mung_symbol(self) -> str:  # noqa: D102
         return "?"
