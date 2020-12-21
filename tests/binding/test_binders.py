@@ -3,7 +3,7 @@
 from typing import List, Tuple
 
 from dinao.binding.binders import FunctionBinder
-from dinao.binding.errors import BadReturnType, FunctionAlreadyBound, MissingTemplateArgument
+from dinao.binding.errors import BadReturnType, FunctionAlreadyBound, MissingTemplateArgument, TemplateError
 
 import pytest
 
@@ -108,6 +108,17 @@ def test_binder_execute_bad_type(binder_and_pool: Tuple[FunctionBinder, MockConn
             pass  # pragma: no cover
 
 
+def test_binder_raises_for_template(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests that a bad template causes an error at binding time."""
+    binder, _ = binder_and_pool
+
+    with pytest.raises(TemplateError, match="#{arg1"):
+
+        @binder.execute("INSERT INTO table #{arg1")
+        def should_raise_0(arg1: str) -> List:
+            pass  # pragma: no cover
+
+
 def test_double_binding_raises(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
     """Tests that binding a function more than once results in an error."""
     binder, _ = binder_and_pool
@@ -143,4 +154,4 @@ def test_args_mismatch_raises(binder_and_pool: Tuple[FunctionBinder, MockConnect
 
         @binder.execute("INSERT INTO table (#{arg})")
         def should_raise_4(some_arg: str):
-            pass
+            pass  # pragma: no cover

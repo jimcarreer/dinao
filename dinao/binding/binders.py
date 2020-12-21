@@ -24,7 +24,7 @@ class FunctionBinder:
 
     def _suppressed_raise(self, exc: Exception):
         if self._verbose_trace:
-            raise exc
+            raise exc  # pragma: no cover
         # Try to cut down on the traces so the user gets closer to the issue in their code
         raise exc.with_traceback(None) from exc
 
