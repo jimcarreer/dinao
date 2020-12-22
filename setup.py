@@ -36,7 +36,7 @@ setup(
     test_suite="tests",
     install_requires=install_requires,
     tests_require=tests_require,
-    python_requires=">=3.7.0, <=3.9",
+    python_requires=">=3.7.0, <3.10",
     extras_require={"tests": tests_require},
     classifiers=[
         "Topic :: Database",
