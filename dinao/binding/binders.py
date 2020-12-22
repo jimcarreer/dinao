@@ -1,6 +1,7 @@
 """Implements functionality for binding python functions to SQL queries and actions."""
 
 import inspect
+import threading
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import Tuple
@@ -19,7 +20,7 @@ class FunctionBinder:
         :param cnx_pool: the connection pool the function binder should use when executing bound SQL functions.
         """
         self._cnx_pool = cnx_pool
-        self._active_cnx = None
+        self._context_store = threading.local()
         self._verbose_trace = False
 
     def _suppressed_raise(self, exc: Exception):
@@ -148,16 +149,17 @@ class FunctionBinder:
         Any exception caught during the context of a connection will trigger a rollback of the transaction.  The
         transaction is automatically committed when execution is yielded back.
         """
-        if self._active_cnx:
-            yield self._active_cnx
+        active_cnx = getattr(self._context_store, "active_cnx", None)
+        if active_cnx:
+            yield active_cnx
             return
-        self._active_cnx = self._cnx_pool.lease()
+        self._context_store.active_cnx = self._cnx_pool.lease()
         try:
-            yield self._active_cnx
-            self._active_cnx.commit()
+            yield self._context_store.active_cnx
+            self._context_store.active_cnx.commit()
         finally:
-            self._cnx_pool.release(self._active_cnx)
-            self._active_cnx = None
+            self._cnx_pool.release(self._context_store.active_cnx)
+            self._context_store.active_cnx = None
 
 
 class BoundedFunction(ABC):
