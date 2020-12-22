@@ -35,7 +35,8 @@ def after_request(response: Response):
     body = f"Body:\n{body.strip()}" if body else ""
     print(f"Handled {request.method} {request.path} ({status}) in {elapsed}ms {body}")
     # Raise Cain if this happens.
-    assert dbi.binder._active_cnx is None, "There should never be an active connection once the request is done."
+    active_cnx = dbi.binder._context_store.active_cnx
+    assert active_cnx is None, "There should never be an active connection once the request is done."
     return response
 
 
