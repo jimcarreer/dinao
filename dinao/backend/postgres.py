@@ -37,7 +37,7 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPool):
         except ModuleNotFoundError:  # pragma: no cover
             issue = "Module psycopg2 not installed, cannot create connection pool"
             raise BackendEngineNotInstalled(issue)
-        self._cnx_kwargs = self._mk_cnx_kwargs()
+        self._cnx_kwargs = self._make_cnx_kwargs()
         self._pool_class = psycopg2.pool.SimpleConnectionPool
         if self._get_arg("pool_threaded", bool, False):
             self._pool_class = psycopg2.pool.ThreadedConnectionPool
@@ -52,7 +52,7 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPool):
             self._pool_impl = self._pool_class(**self._cnx_kwargs)
         return self._pool_impl
 
-    def _mk_cnx_kwargs(self):
+    def _make_cnx_kwargs(self):
         dbname = self._db_url.path.strip("/")
         if not dbname:
             raise ConfigurationError("Database name is required but missing")

@@ -1,7 +1,13 @@
 sudo: false
 language: python
+dist: focal
 services:
   - docker
+addons:
+  apt:
+    packages:
+      - aspell
+      - aspell-en
 python:
   - '3.7'
   - '3.8'

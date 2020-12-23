@@ -136,7 +136,7 @@ class ConnectionPool(ABC):
 
     def _get_arg(self, name: str, expected_type, default=None):
         if name not in self._args:
-            self.logger.debug(f'No "{name}" specified, defaulting to {default}')
+            self.logger.debug(f"No '{name}' specified, defaulting to {default}")
             return default
         caster = expected_type if expected_type is not bool else self._strict_bool
         try:
@@ -145,9 +145,9 @@ class ConnectionPool(ABC):
                 return caster(self._args.pop(name)[0])
             return self._args.pop(name)
         except AssertionError:
-            raise ConfigurationError(f'Invalid argument "{name}": only a single value must be specified')
+            raise ConfigurationError(f"Invalid argument '{name}': only a single value must be specified")
         except ValueError:
-            raise ConfigurationError(f'Invalid argument "{name}": must be {expected_type.__name__}')
+            raise ConfigurationError(f"Invalid argument '{name}': must be {expected_type.__name__}")
 
     @property
     @abstractmethod

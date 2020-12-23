@@ -1,0 +1,13 @@
+matrix:
+  - name: Python Source
+    aspell:
+      lang: en
+      d: en_US
+      camel-case: true
+    dictionary:
+      output: /tmp/dinao-pyspelling.dic
+      wordlists:
+        - .pyspelling.xdic
+    sources:
+      - dinao/**/*.py
+      - examples/**/*.py
