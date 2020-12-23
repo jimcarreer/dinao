@@ -23,7 +23,7 @@ EMPLOYEE = {
     "last_name": "Smith",
     "username": "tsmith",
     "email": "tsmith@email",
-    "department_id": 589
+    "department_id": 589,
 }
 
 # The ordering of these tuples is:
@@ -36,13 +36,13 @@ GOOD_CASES = (
         ("  #{arg1} #{arg2} #{arg3}  ",),
         (("arg1",), ("arg2",), ("arg3",)),
         {"arg1": 1, "arg2": "test", "arg3": 2.0},
-        ("  %s %s %s  ", (1, "test", 2.0))
+        ("  %s %s %s  ", (1, "test", 2.0)),
     ),
     (  # Basic test case
         ("INSERT INTO my_table (#{my_arg.my_arg_property.another_property}, #{my_other_arg})",),
         (("my_arg", "my_arg_property", "another_property"), ("my_other_arg",)),
         {"my_arg": MyArg(MyNestedArg("test")), "my_other_arg": 5.4},
-        ("INSERT INTO my_table (%s, %s)", ("test", 5.4))
+        ("INSERT INTO my_table (%s, %s)", ("test", 5.4)),
     ),
     (  # Repetitive replacement
         (
@@ -76,8 +76,8 @@ GOOD_CASES = (
             "  first_name = %s "
             "  last_name = %s "
             "  department_id = %s ",
-            ("Tom", "Smith", "tsmith", 589, "tsmith@email", "tsmith@email", "Tom", "Smith", 589)
-        )
+            ("Tom", "Smith", "tsmith", 589, "tsmith@email", "tsmith@email", "Tom", "Smith", 589),
+        ),
     ),
     (  # Test case for not mangling complex strings
         (
@@ -91,7 +91,7 @@ GOOD_CASES = (
             "SELECT * FROM table_name WHERE"
             "  some_column = %s AND "
             '  json_column @> \'{"some": [{"nested": [{"json_in_sql": "%s"}]}]}\' ',
-            ("test", "something")
+            ("test", "something"),
         ),
     ),
 )

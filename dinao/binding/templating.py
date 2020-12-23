@@ -61,7 +61,7 @@ class Template:
                 self._parsed_template.append(TemplateParameter(node))
                 continue
             # If the previous element was a string, concat it with the new str node otherwise append it
-            previous = self._parsed_template.pop() if self._parsed_template else ''
+            previous = self._parsed_template.pop() if self._parsed_template else ""
             previous = [previous + node] if isinstance(previous, str) else [previous, node]
             self._parsed_template += previous
         self._arguments = tuple(self._arguments)
