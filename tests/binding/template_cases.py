@@ -1,16 +1,48 @@
 """Test cases for templating functionality."""
 
-# The ordering of these tuples is (<Template init arguments>, <expected munged sql>, <expected arguments>)
+from dataclasses import dataclass
+
+
+@dataclass
+class MyNestedArg:
+    """Dummy class for testing argument rendering."""
+
+    another_property: str
+
+
+@dataclass
+class MyArg:
+    """Dummy class for testing argument rendering."""
+
+    my_arg_property: MyNestedArg
+
+
+MUNG_SYMBOL = "%s"
+EMPLOYEE = {
+    "first_name": "Tom",
+    "last_name": "Smith",
+    "username": "tsmith",
+    "email": "tsmith@email",
+    "department_id": 589
+}
+
+# The ordering of these tuples is:
+# - Template init arguments,
+# - Template's expected arguments property,
+# - Keyword arguments to call with template.render(...)
+# - Expected return values from template.render(...)
 GOOD_CASES = (
     (  # Valid but kind of dumb, we're not validating their SQL with the template obviously
-        ("  #{arg1} #{arg2} #{arg3}  ", "%s"),
-        "  %s %s %s  ",
+        ("  #{arg1} #{arg2} #{arg3}  ",),
         (("arg1",), ("arg2",), ("arg3",)),
+        {"arg1": 1, "arg2": "test", "arg3": 2.0},
+        ("  %s %s %s  ", (1, "test", 2.0))
     ),
     (  # Basic test case
-        ("INSERT INTO my_table (#{my_arg.my_arg_property.another_property}, #{my_other_arg})", "%s"),
-        "INSERT INTO my_table (%s, %s)",
+        ("INSERT INTO my_table (#{my_arg.my_arg_property.another_property}, #{my_other_arg})",),
         (("my_arg", "my_arg_property", "another_property"), ("my_other_arg",)),
+        {"my_arg": MyArg(MyNestedArg("test")), "my_other_arg": 5.4},
+        ("INSERT INTO my_table (%s, %s)", ("test", 5.4))
     ),
     (  # Repetitive replacement
         (
@@ -22,17 +54,6 @@ GOOD_CASES = (
             "  first_name = #{e.first_name} "
             "  last_name = #{e.last_name} "
             "  department_id = #{e.department_id} ",
-            "%s",
-        ),
-        (
-            "INSERT INTO employees VALUES "
-            "  (%s, %s, %s, %s, %s) "
-            "ON CONFLICT (username) DO "
-            "UPDATE SET "
-            "  email = %s "
-            "  first_name = %s "
-            "  last_name = %s "
-            "  department_id = %s "
         ),
         (
             ("e", "first_name"),
@@ -45,19 +66,32 @@ GOOD_CASES = (
             ("e", "last_name"),
             ("e", "department_id"),
         ),
+        {"e": EMPLOYEE},
+        (
+            "INSERT INTO employees VALUES "
+            "  (%s, %s, %s, %s, %s) "
+            "ON CONFLICT (username) DO "
+            "UPDATE SET "
+            "  email = %s "
+            "  first_name = %s "
+            "  last_name = %s "
+            "  department_id = %s ",
+            ("Tom", "Smith", "tsmith", 589, "tsmith@email", "tsmith@email", "Tom", "Smith", 589)
+        )
     ),
     (  # Test case for not mangling complex strings
         (
             "SELECT * FROM table_name WHERE"
             "  some_column = #{argument.member.sub_member} AND "
             '  json_column @> \'{"some": [{"nested": [{"json_in_sql": "#{another_argument}"}]}]}\' ',
-            "%s",
         ),
+        (("argument", "member", "sub_member"), ("another_argument",)),
+        {"argument": {"member": {"sub_member": "test"}}, "another_argument": "something"},
         (
             "SELECT * FROM table_name WHERE"
             "  some_column = %s AND "
-            '  json_column @> \'{"some": [{"nested": [{"json_in_sql": "%s"}]}]}\' '
+            '  json_column @> \'{"some": [{"nested": [{"json_in_sql": "%s"}]}]}\' ',
+            ("test", "something")
         ),
-        (("argument", "member", "sub_member"), ("another_argument",)),
     ),
 )

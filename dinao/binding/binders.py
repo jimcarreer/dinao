@@ -4,7 +4,6 @@ import inspect
 import threading
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from typing import Tuple
 
 from dinao.backend.base import Connection, ConnectionPool
 from dinao.binding.errors import BadReturnType, FunctionAlreadyBound, MissingTemplateArgument, TemplateError
@@ -37,9 +36,14 @@ class FunctionBinder:
 
     def _make_template(self, sql: str):
         try:
-            return Template(sql, self._cnx_pool.mung_symbol)
+            return Template(sql)
         except TemplateError as exc:
             self._suppressed_raise(exc)
+
+    @property
+    def mung_symbol(self) -> str:
+        """Return the mung symbol used for rendering templates bound by the binder."""
+        return self._cnx_pool.mung_symbol
 
     def execute(self, sql: str) -> callable:
         """Binds a given function to a given SQL template.
@@ -191,26 +195,6 @@ class BoundedSQLFunction(BoundedFunction):
                 error = f"Argument '{arg_id[0]}' specified in template but is not an argument of {func.__name__}"
                 raise MissingTemplateArgument(error)
 
-    @staticmethod
-    def _resolve_value(arg_id: Tuple[str], root_args: dict):
-        node = root_args
-        for arg_name in arg_id:
-            node = node[arg_name] if isinstance(node, dict) else getattr(node, arg_name)
-        return node
-
-    def _resolve_values(self, *args, **kwargs):
-        bound = self._sig.bind(*args, **kwargs)
-        bound.apply_defaults()
-        cached = {}
-        values = []
-        for arg_id in self._sql_template.arguments:
-            value = cached.get(arg_id)
-            if not value:
-                value = self._resolve_value(arg_id, bound.arguments)
-                cached[arg_id] = value
-            values.append(value)
-        return tuple(values)
-
     def __str__(self) -> str:
         """Return a simple representation of a SQL bound function."""
         return f"{self.__class__.__name__} of {self._sql_template} ({self.bounded_function.__name__})"
@@ -247,9 +231,11 @@ class BoundedQuery(BoundedSQLFunction):
         :param args: the positional arguments of the bounded / decorated function
         :param kwargs: the keyword arguments of the bounded / decorated function
         """
-        values = self._resolve_values(*args, **kwargs)
+        bound = self._sig.bind(*args, **kwargs)
+        bound.apply_defaults()
+        sql, values = self._sql_template.render(self._binder.mung_symbol, bound.arguments)
         with self._binder.connection() as cnx:
-            with cnx.query(self._sql_template.munged_sql, values) as results:
+            with cnx.query(sql, values) as results:
                 if self._returns_none:
                     return None
                 return results.fetchall()
@@ -280,9 +266,11 @@ class BoundedExecution(BoundedSQLFunction):
         :param args: the positional arguments of the bounded / decorated function
         :param kwargs: the keyword arguments of the bounded / decorated function
         """
-        values = self._resolve_values(*args, **kwargs)
+        bound = self._sig.bind(*args, **kwargs)
+        bound.apply_defaults()
+        sql, values = self._sql_template.render(self._binder.mung_symbol, bound.arguments)
         with self._binder.connection() as cnx:
-            affected = cnx.execute(self._sql_template.munged_sql, values)
+            affected = cnx.execute(sql, values)
             return None if self._returns_none else affected
 
 

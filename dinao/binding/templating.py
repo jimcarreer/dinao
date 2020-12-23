@@ -1,6 +1,6 @@
 """Implements a simple templating grammar / parser for binding SQL to functions."""
 
-import typing
+from typing import Tuple
 
 from dinao.binding.errors import TemplateError
 
@@ -10,6 +10,17 @@ from pyparsing import (  # noqa: I101
     Combine, Forward, Group, OneOrMore, Suppress, White, Word, ZeroOrMore, ParseBaseException
 )
 # fmt: on
+
+
+class TemplateParameter:
+    """Represents a parameter for prepared statement rendered from a template."""
+
+    def __init__(self, kwarg_path: Tuple[str]):
+        """Construct a template parameter.
+
+        :param kwarg_path: an immutable list representing the 'path' of the parameter in a root dictionary of arguments
+        """
+        self.kwarg_path = kwarg_path
 
 
 class Template:
@@ -31,16 +42,14 @@ class Template:
     GRAMMAR      = OneOrMore(NULL_SPACE + LOOKUP + NULL_SPACE | SQL_FRAGMENT)         # noqa: E221
     # fmt: on
 
-    def __init__(self, sql_template: str, mung_symbol: str):
+    def __init__(self, sql_template: str):
         """Construct a simple variable replacement template.
 
         :param sql_template: the un-munged SQL template as a plain string.
-        :param mung_symbol: the symbol to replace variable specifications with within the template.
         """
         self._sql_template = sql_template
-        self._mung_symbol = mung_symbol
-        self._argument_names = []
-        self._munged_template = ""
+        self._parsed_template = []
+        self._arguments = []
         try:
             nodes = self.GRAMMAR.parseString(sql_template, parseAll=True)
         except ParseBaseException as pbx:
@@ -48,21 +57,47 @@ class Template:
         for node in nodes:
             if not isinstance(node, str):
                 node = tuple(map(str, node))
-                self._argument_names.append(node)
-                node = self._mung_symbol
-            self._munged_template += node
-        self._argument_names = tuple(self._argument_names)
+                self._arguments.append(node)
+                self._parsed_template.append(TemplateParameter(node))
+                continue
+            # If the previous element was a string, concat it with the new str node otherwise append it
+            previous = self._parsed_template.pop() if self._parsed_template else ''
+            previous = [previous + node] if isinstance(previous, str) else [previous, node]
+            self._parsed_template += previous
+        self._arguments = tuple(self._arguments)
+
+    @property
+    def arguments(self) -> Tuple[Tuple[str]]:
+        """Return the arguments expected by the template."""
+        return self._arguments
 
     def __str__(self) -> str:
         """Return a simple representation of the template."""
         return self._sql_template
 
-    @property
-    def arguments(self) -> typing.Tuple[typing.Tuple[str]]:
-        """Return a tuple of tuples representing the argument identifiers used in the template."""
-        return self._argument_names
+    @staticmethod
+    def _resolve_value(kwarg_path: Tuple[str], root_args: dict):
+        node = root_args
+        for arg_name in kwarg_path:
+            node = node[arg_name] if isinstance(node, dict) else getattr(node, arg_name)
+        return node
 
-    @property
-    def munged_sql(self) -> str:
-        """Return the SQL template with the argument specifiers replaced with the mung_symbol."""
-        return self._munged_template
+    def render(self, mung_symbol: str, kwargs: dict) -> [str, tuple]:
+        """Render the template to SQL execution arguments.
+
+        :param mung_symbol: the symbol used to replace parameters in the template
+        :param kwargs: the root dictionary of key word arguments to resolve parameters from
+
+        :returns: a tuple where the first element is a SQL statement and the second is a tuple of its parameters
+        """
+        munged = ""
+        parameters = []
+        cache = {}
+        for frag in self._parsed_template:
+            if isinstance(frag, TemplateParameter):
+                value = cache.get(frag.kwarg_path) or self._resolve_value(frag.kwarg_path, kwargs)
+                cache[frag.kwarg_path] = value
+                parameters.append(value)
+                frag = mung_symbol
+            munged += frag
+        return munged, tuple(parameters)

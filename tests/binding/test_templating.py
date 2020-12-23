@@ -10,12 +10,14 @@ import pytest
 from tests.binding.template_cases import GOOD_CASES
 
 
-@pytest.mark.parametrize("init_args, expected_sql, expected_args", GOOD_CASES)
-def test_valid_templates(init_args: Tuple[str], expected_sql: str, expected_args: Tuple[Tuple[str]]):
+@pytest.mark.parametrize("init, ex_args, r_kwargs, ex_render, ", GOOD_CASES)
+def test_valid_templates(init: Tuple, ex_args: Tuple[Tuple[str]], r_kwargs: dict, ex_render: Tuple[str, Tuple]):
     """Tests functionality around well formed SQL template strings."""
-    template = Template(*init_args)
-    assert template.munged_sql == expected_sql
-    assert template.arguments == expected_args
+    template = Template(*init)
+    assert template.arguments == ex_args
+    sql, values = template.render("%s", r_kwargs)
+    assert sql == ex_render[0]
+    assert values == ex_render[1]
 
 
 def test_bad_template():
@@ -28,4 +30,4 @@ def test_bad_template():
     ]
     raw_template = "\n".join(raw_template)
     with pytest.raises(TemplateError, match="SET mycol1 = #{myarg1"):
-        Template(raw_template, "%s")
+        Template(raw_template)
