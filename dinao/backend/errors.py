@@ -8,7 +8,7 @@ class UnsupportedBackend(Exception):
 
 
 class ConfigurationError(Exception):
-    """Raised when theres a backend configuration connection error."""
+    """Raised when there is a backend configuration connection error."""
 
     pass
 

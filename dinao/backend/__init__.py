@@ -34,7 +34,7 @@ def create_connection_pool(db_url: str) -> ConnectionPool:
         return ConnectionPoolPSQLPsycopg2(db_url)
     if backend == "sqlite3" and engine is None:
         return ConnectionPoolSQLite3(db_url)
-    raise UnsupportedBackend(f'The backend+engine "{parsed_url.scheme}" is not supported')
+    raise UnsupportedBackend(f"The backend+engine '{parsed_url.scheme}' is not supported")
 
 
 __all__ = ["Connection", "ConnectionPool", "ResultSet", "create_connection_pool", "errors"]

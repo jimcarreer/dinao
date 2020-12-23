@@ -45,15 +45,15 @@ class Template:
     def __init__(self, sql_template: str):
         """Construct a simple variable replacement template.
 
-        :param sql_template: the un-munged SQL template as a plain string.
+        :param sql_template: the raw SQL template before parsing as a plain string.
         """
         self._sql_template = sql_template
         self._parsed_template = []
         self._arguments = []
         try:
             nodes = self.GRAMMAR.parseString(sql_template, parseAll=True)
-        except ParseBaseException as pbx:
-            raise TemplateError(f"{pbx.msg}:\n{pbx.line}\n{(' '*(pbx.col -1 ))}^")
+        except ParseBaseException as x:
+            raise TemplateError(f"{x.msg}:\n{x.line}\n{(' '*(x.col -1 ))}^")
         for node in nodes:
             if not isinstance(node, str):
                 node = tuple(map(str, node))
