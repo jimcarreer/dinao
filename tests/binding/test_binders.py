@@ -178,7 +178,7 @@ def test_binder_raises_for_no_pool():
         test_bound_execute("testing")
 
     with pytest.raises(NoPoolSetError, match="No connection pool"):
-        with binder.connection() as cnx:
+        with binder.connection() as cnx:  # noqa: F841
             pass  # pragma: no cover
 
 

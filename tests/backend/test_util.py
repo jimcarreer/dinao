@@ -18,9 +18,9 @@ import pytest
         ("postgresql://user:pass@host:4444/dbname?pool_threaded=ABC", "must be bool", ConfigurationError),
         ("postgresql://user:pass@host:4444/dbname?weird=XYZ", "Unexpected argument", ConfigurationError),
         (
-                "postgresql://user:pass@host:4444/dbname?weird=XYZ&schema=s1&schema=s2&schema=s3",
-                "Unexpected argument",
-                ConfigurationError
+            "postgresql://user:pass@host:4444/dbname?weird=XYZ&schema=s1&schema=s2&schema=s3",
+            "Unexpected argument",
+            ConfigurationError,
         ),
         (
             "postgresql://user:pass@host:4444/dbname?weird=JUNK&pool_threaded=True",
