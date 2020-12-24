@@ -51,10 +51,7 @@ and query parameterization.
     from dinao.backend import create_connection_pool
     from dinao.binding import FunctionBinder
 
-    con_url = "postgresql://test_user:test_pass@localhost:5432/test_db"
-    db_pool = create_connection_pool(con_url)
-    binder = FunctionBinder(db_pool)
-
+    binder = FunctionBinder()
 
     @binder.execute(
         "CREATE TABLE IF NOT EXISTS my_table ( "
@@ -90,6 +87,9 @@ and query parameterization.
 
 
     if __name__ == '__main__':
+        con_url = "postgresql://test_user:test_pass@localhost:5432/test_db"
+        db_pool = create_connection_pool(con_url)
+        binder.pool = db_pool
         populate()
         for row in search("test%"):
             n, v = row

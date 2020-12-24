@@ -6,7 +6,8 @@ import signal
 import time
 import random
 
-import postgres as dbi
+import dbi
+from dinao.backend import create_connection_pool
 
 
 class Smacker(threading.Thread):
@@ -21,6 +22,7 @@ class Smacker(threading.Thread):
 
     def run(self):
         tid = threading.get_ident()
+        tid = f"{tid}-{self.__class__.__name__}"
         cnt = 0
         print(f"{tid}: Starting")
         while not self.shutdown_flag.is_set():
@@ -68,6 +70,11 @@ class ShutdownNow(Exception):
 def main():
     signal.signal(signal.SIGTERM, ShutdownNow.raise_it)
     signal.signal(signal.SIGINT, ShutdownNow.raise_it)
+    # We make 30 workers, so we need a thread safe pool with 30 connections
+    con_url = "postgresql://test_user:test_pass@localhost:5432/test_db?pool_threaded=True&pool_max_conn=30"
+    db_pool = create_connection_pool(con_url)
+    dbi.binder.pool = db_pool
+    dbi.make_table()
     workers = 10
     smackers = []
     try:
@@ -85,5 +92,4 @@ def main():
 
 
 if __name__ == "__main__":
-    dbi.make_table()
     main()

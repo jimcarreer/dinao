@@ -3,7 +3,14 @@
 from typing import List, Tuple
 
 from dinao.binding.binders import FunctionBinder
-from dinao.binding.errors import BadReturnType, FunctionAlreadyBound, MissingTemplateArgument, TemplateError
+from dinao.binding.errors import (
+    BadReturnType,
+    FunctionAlreadyBound,
+    MissingTemplateArgument,
+    NoPoolSetError,
+    PoolAlreadySetError,
+    TemplateError,
+)
 
 import pytest
 
@@ -21,7 +28,8 @@ def binder_and_pool(request):
     if hasattr(request, "param"):
         result_stack = request.param
     pool = MockConnectionPool(result_stack)
-    binder = FunctionBinder(pool)
+    binder = FunctionBinder()
+    binder.pool = pool
     yield binder, pool
     pool.dispose()
 
@@ -156,3 +164,28 @@ def test_args_mismatch_raises(binder_and_pool: Tuple[FunctionBinder, MockConnect
         @binder.execute("INSERT INTO table (#{arg})")
         def should_raise_4(some_arg: str):
             pass  # pragma: no cover
+
+
+def test_binder_raises_for_no_pool():
+    """Tests an error is raised when a bind has no pool but an operation requiring one is performed."""
+    binder = FunctionBinder()
+
+    @binder.execute("INSERT INTO table (#{arg})")
+    def test_bound_execute(arg: str):
+        pass  # pragma: no cover
+
+    with pytest.raises(NoPoolSetError, match="No connection pool"):
+        test_bound_execute("testing")
+
+    with pytest.raises(NoPoolSetError, match="No connection pool"):
+        with binder.connection() as cnx:
+            pass  # pragma: no cover
+
+
+def test_binder_raises_for_pool_set_twice(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests an error is raised when a binder has its pool set twice."""
+    binder, _ = binder_and_pool
+    pool = MockConnectionPool([])
+
+    with pytest.raises(PoolAlreadySetError, match="only be set once"):
+        binder.pool = pool

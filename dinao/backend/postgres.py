@@ -43,14 +43,7 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPool):
             self._pool_class = psycopg2.pool.ThreadedConnectionPool
         self._pool_impl = None
         self._raise_for_unexpected_args()
-        if not self._defer_pool:
-            assert self._pool
-
-    @property
-    def _pool(self):
-        if self._pool_impl is None:
-            self._pool_impl = self._pool_class(**self._cnx_kwargs)
-        return self._pool_impl
+        self._pool = self._pool_class(**self._cnx_kwargs)
 
     def _make_cnx_kwargs(self):
         dbname = self._db_url.path.strip("/")

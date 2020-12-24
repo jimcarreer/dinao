@@ -15,8 +15,13 @@ import pytest
         ("postgresql://user:pass@host:4444", "name is required but missing", ConfigurationError),
         ("postgresql://user:pass@host:4444/dbname?pool_max_conn=ABC", "must be int", ConfigurationError),
         ("postgresql://user:pass@host:4444/dbname?pool_min_conn=ABC", "must be int", ConfigurationError),
-        ("postgresql://user:pass@host:4444/dbname?weird=XYZ&defer=False", "Unexpected argument", ConfigurationError),
-        ("postgresql://user:pass@host:4444/dbname?defer=JUNK", "must be bool", ConfigurationError),
+        ("postgresql://user:pass@host:4444/dbname?pool_threaded=ABC", "must be bool", ConfigurationError),
+        ("postgresql://user:pass@host:4444/dbname?weird=XYZ", "Unexpected argument", ConfigurationError),
+        (
+                "postgresql://user:pass@host:4444/dbname?weird=XYZ&schema=s1&schema=s2&schema=s3",
+                "Unexpected argument",
+                ConfigurationError
+        ),
         (
             "postgresql://user:pass@host:4444/dbname?weird=JUNK&pool_threaded=True",
             "Unexpected argument",

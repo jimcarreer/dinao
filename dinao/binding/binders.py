@@ -6,21 +6,25 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 
 from dinao.backend.base import Connection, ConnectionPool
-from dinao.binding.errors import BadReturnType, FunctionAlreadyBound, MissingTemplateArgument, TemplateError
+from dinao.binding.errors import (
+    BadReturnType,
+    FunctionAlreadyBound,
+    MissingTemplateArgument,
+    NoPoolSetError,
+    PoolAlreadySetError,
+    TemplateError,
+)
 from dinao.binding.templating import Template
 
 
 class FunctionBinder:
     """Implements functionality for binding functions to SQL queries and actions."""
 
-    def __init__(self, cnx_pool: ConnectionPool):
-        """Construct a function binder utilizing the given connection pool.
-
-        :param cnx_pool: the connection pool the function binder should use when executing bound SQL functions.
-        """
-        self._cnx_pool = cnx_pool
+    def __init__(self):
+        """Construct a function binder."""
         self._context_store = threading.local()
         self._verbose_trace = False
+        self._cnx_pool = None
 
     def _suppressed_raise(self, exc: Exception):
         if self._verbose_trace:
@@ -41,9 +45,26 @@ class FunctionBinder:
             self._suppressed_raise(exc)
 
     @property
+    def pool(self) -> ConnectionPool:
+        """Get the connection pool used by this binder."""
+        return self._cnx_pool
+
+    @pool.setter
+    def pool(self, pool: ConnectionPool):
+        """Set the connection pool used by this binder.
+
+        :raises PoolAlreadySetError
+        """
+        if self._cnx_pool is not None:
+            raise PoolAlreadySetError("The connection pool can only be set once")
+        self._cnx_pool = pool
+
+    @property
     def mung_symbol(self) -> str:
         """Return the mung symbol used for rendering templates bound by the binder."""
-        return self._cnx_pool.mung_symbol
+        if self._cnx_pool is None:
+            raise NoPoolSetError("No connection pool has been set for the binder")
+        return self.pool.mung_symbol
 
     def execute(self, sql: str) -> callable:
         """Binds a given function to a given SQL template.
@@ -154,15 +175,17 @@ class FunctionBinder:
         transaction is automatically committed when execution is yielded back.
         """
         active_cnx = getattr(self._context_store, "active_cnx", None)
+        if self._cnx_pool is None:
+            raise NoPoolSetError("No connection pool has been set for the binder")
         if active_cnx:
             yield active_cnx
             return
-        self._context_store.active_cnx = self._cnx_pool.lease()
+        self._context_store.active_cnx = self.pool.lease()
         try:
             yield self._context_store.active_cnx
             self._context_store.active_cnx.commit()
         finally:
-            self._cnx_pool.release(self._context_store.active_cnx)
+            self.pool.release(self._context_store.active_cnx)
             self._context_store.active_cnx = None
 
 

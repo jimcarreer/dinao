@@ -2,9 +2,11 @@ import atexit
 import time
 import signal
 
+from dinao.backend import create_connection_pool
 from flask import Flask,  g, request, jsonify, Response
 
 import dbi
+
 
 app = Flask('dinao_flask_example')
 
@@ -15,10 +17,14 @@ def make_error(error: str, status: int = 400):
 
 @app.before_first_request
 def register_shutdowns():
+    con_url = "postgresql://test_user:test_pass@postgres:5432/test_db"
+    db_pool = create_connection_pool(con_url)
+    print("Setting pool for binder.")
+    dbi.binder.pool = db_pool
     print("Registering shutdown for cleaning up pool.")
-    atexit.register(dbi.db_pool.dispose)
-    signal.signal(signal.SIGTERM, dbi.db_pool.dispose)
-    signal.signal(signal.SIGINT, dbi.db_pool.dispose)
+    atexit.register(db_pool.dispose)
+    signal.signal(signal.SIGTERM, db_pool.dispose)
+    signal.signal(signal.SIGINT, db_pool.dispose)
 
 
 @app.before_request
