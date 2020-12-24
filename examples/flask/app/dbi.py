@@ -1,9 +1,6 @@
-from dinao.backend import create_connection_pool
 from dinao.binding import FunctionBinder
 
-con_url = "postgresql://test_user:test_pass@postgres:5432/test_db?defer=True"
-db_pool = create_connection_pool(con_url)
-binder = FunctionBinder(db_pool)
+binder = FunctionBinder()
 
 
 @binder.execute(

@@ -1,6 +1,18 @@
 """Defines common errors raised from function binding."""
 
 
+class NoPoolSetError(Exception):
+    """Raised when there is no pool set for a function binder before a sql operation is called."""
+
+    pass
+
+
+class PoolAlreadySetError(Exception):
+    """Raised when a pool is set twice on a binder."""
+
+    pass
+
+
 class BindingError(Exception):
     """Base exception for errors when binding functions."""
 

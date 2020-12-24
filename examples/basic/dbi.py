@@ -1,11 +1,8 @@
 # pip install dinao
 # pip install psycopg2-binary
-from dinao.backend import create_connection_pool
 from dinao.binding import FunctionBinder
 
-con_url = "postgresql://test_user:test_pass@localhost:5432/test_db?pool_threaded=True&pool_max_conn=30"
-db_pool = create_connection_pool(con_url)
-binder = FunctionBinder(db_pool)
+binder = FunctionBinder()
 
 
 @binder.execute(
@@ -59,9 +56,3 @@ def populate():
     upsert("testing", 52)
     upsert("test", 39)
     upsert("other_thing", 20)
-
-
-if __name__ == '__main__':
-    populate()
-    for n, v in search("test%"):
-        print(f"{n}: {v}")

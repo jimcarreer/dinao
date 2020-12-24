@@ -108,12 +108,7 @@ class ConnectionPool(ABC):
 
         The db_url is expected to be in the following format::
 
-            "{db_backend}+{driver}://{username}:{password}@{hostname}:{port}/{db_name}?{optional_args}"
-
-        Supported `optional_args` include:
-
-            * defer, a boolean specifying pool initialization should be deferred until a connection is needed, defaults
-              to False
+            "{dialect}+{driver}://{username}:{password}@{hostname}:{port}/{db_name}?{optional_args}"
 
         :param db_url: a url with the described format
         """
@@ -121,12 +116,11 @@ class ConnectionPool(ABC):
         self._raw_db_url = db_url
         self._db_url = urlparse(self._raw_db_url)
         self._args = parse_qs(self._db_url.query)
-        self._defer_pool = self._get_arg("defer", bool, False)
 
     @staticmethod
     def _strict_bool(value: str):
         if value.lower() not in ["true", "false"]:
-            raise ValueError()
+            raise ValueError(f"Cannot cast '{value}' to bool")
         return value.lower() == "true"
 
     def _raise_for_unexpected_args(self):
@@ -144,10 +138,10 @@ class ConnectionPool(ABC):
                 assert len(self._args.get(name)) == 1
                 return caster(self._args.pop(name)[0])
             return self._args.pop(name)
-        except AssertionError:
-            raise ConfigurationError(f"Invalid argument '{name}': only a single value must be specified")
-        except ValueError:
-            raise ConfigurationError(f"Invalid argument '{name}': must be {expected_type.__name__}")
+        except AssertionError as x:
+            raise ConfigurationError(f"Invalid argument '{name}': only a single value must be specified") from x
+        except ValueError as x:
+            raise ConfigurationError(f"Invalid argument '{name}': must be {expected_type.__name__}") from x
 
     @property
     @abstractmethod
