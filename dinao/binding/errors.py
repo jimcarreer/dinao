@@ -19,6 +19,12 @@ class BindingError(Exception):
     pass
 
 
+class MappingError(Exception):
+    """Base exception for errors related to mapping database results to return types."""
+
+    pass
+
+
 class TemplateError(BindingError):
     """Raised when parsing a template fails."""
 
@@ -45,5 +51,23 @@ class BadReturnType(SignatureError):
 
 class MissingTemplateArgument(SignatureError):
     """Raised when a template specifies an argument not found in its bounded function's signature."""
+
+    pass
+
+
+class CannotInferMappingError(SignatureError):
+    """Raised when the return mapping for a bound function cannot be determined."""
+
+    pass
+
+
+class TooManyValuesError(MappingError):
+    """Raised when the number of columns does not match the expected number for mapping."""
+
+    pass
+
+
+class TooManyRowsError(MappingError):
+    """Raised when mapping implies a singular return, but many rows are returned."""
 
     pass

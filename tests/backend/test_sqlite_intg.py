@@ -21,7 +21,7 @@ def test_backend_impls(tmp_sqlite3_db_url: str):
     with cnx.query(test_sql.SIMPLE_SELECT, (6,)) as res:
         res: ResultSet = res
         row = res.fetchone()
-        assert ("my_pk_col", "some_uuid", "col_bigint", "col_integer") == res.columns()
+        assert ["my_pk_col", "some_uuid", "col_bigint", "col_integer"] == [r.name for r in res.description]
         assert (7, 14) == (row[2], row[3])
         assert 2 == len(res.fetchall())
     cnx_pool.release(cnx)

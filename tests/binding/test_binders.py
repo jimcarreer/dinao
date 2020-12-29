@@ -1,49 +1,25 @@
 """Tests the functionality in the dinao.binding module."""
 
-from typing import List, Tuple
+from typing import Generator, Mapping, Tuple
 
 from dinao.binding.binders import FunctionBinder
-from dinao.binding.errors import (
-    BadReturnType,
-    FunctionAlreadyBound,
-    MissingTemplateArgument,
-    NoPoolSetError,
-    PoolAlreadySetError,
-    TemplateError,
-)
+from dinao.binding.errors import TooManyRowsError
 
 import pytest
 
-from tests.binding.mocks import MockConnection, MockConnectionPool, MockResultSet
-
-
-@pytest.fixture()
-def binder_and_pool(request):
-    """Fixture that yields a FunctionBinder (and its MockedConnectionPool) initialized with a set of MockResultSets.
-
-    .. note::
-        Can use the `indirect` parametrize functionality in fixture to specify the mocked results.
-    """
-    result_stack = []
-    if hasattr(request, "param"):
-        result_stack = request.param
-    pool = MockConnectionPool(result_stack)
-    binder = FunctionBinder()
-    binder.pool = pool
-    yield binder, pool
-    pool.dispose()
+from tests.binding.mocks import MockConnection, MockConnectionPool, MockDMLCursor, MockDQLCursor
 
 
 @pytest.mark.parametrize(
     "binder_and_pool",
     [
         [
-            MockResultSet([], 1, tuple()),
-            MockResultSet([], 0, tuple()),
-            MockResultSet([], 0, tuple()),
-            MockResultSet([], 1, tuple()),
-            MockResultSet([(1,), (2,), (3,)], 3, ("some_num",)),
-            MockResultSet([], 1, tuple()),
+            MockDMLCursor(1),
+            MockDMLCursor(0),
+            MockDMLCursor(0),
+            MockDMLCursor(1),
+            MockDQLCursor([(1,), (2,), (3,)], (("some_num", 99),)),
+            MockDMLCursor(1),
         ],
     ],
     indirect=["binder_and_pool"],
@@ -106,86 +82,90 @@ def test_basic_bindings(binder_and_pool: Tuple[FunctionBinder, MockConnectionPoo
     ]
 
 
-def test_binder_execute_bad_type(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
-    """Tests that binding a function specifying an invalid return type for execution raises an exception."""
-    binder, _ = binder_and_pool
+@pytest.mark.parametrize(
+    "binder_and_pool",
+    [
+        [
+            MockDQLCursor([(1,), (2,), (3,)], (("some_num", 99),)),
+            MockDQLCursor([(4,), (5,), (6,)], (("some_num", 99),)),
+        ],
+    ],
+    indirect=["binder_and_pool"],
+)
+def test_binder_generating_query(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests binder when the result type is a generator."""
+    binder, pool = binder_and_pool
 
-    with pytest.raises(BadReturnType, match="can only return None or int"):
-
-        @binder.execute("INSERT INTO TABLE (#{arg1})")
-        def should_raise(arg1: str) -> List:
-            pass  # pragma: no cover
-
-
-def test_binder_raises_for_template(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
-    """Tests that a bad template causes an error at binding time."""
-    binder, _ = binder_and_pool
-
-    with pytest.raises(TemplateError, match="#{arg1"):
-
-        @binder.execute("INSERT INTO table #{arg1")
-        def should_raise_0(arg1: str) -> List:
-            pass  # pragma: no cover
-
-
-def test_double_binding_raises(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
-    """Tests that binding a function more than once results in an error."""
-    binder, _ = binder_and_pool
-    match = "has already been bounded by"
-
-    with pytest.raises(FunctionAlreadyBound, match=match):
-
-        @binder.execute("UPDATE table SET col = #{arg1}")
-        @binder.execute("INSERT INTO TABLE (#{arg1})")
-        def should_raise_1(arg1: str):
-            pass  # pragma: no cover
-
-    with pytest.raises(FunctionAlreadyBound, match=match):
-
-        @binder.execute("UPDATE table SET col = #{arg1}")
-        @binder.query("SELECT * FROM table WHERE col = #{arg1})")
-        def should_raise_2(arg1: str):
-            pass  # pragma: no cover
-
-    with pytest.raises(FunctionAlreadyBound, match=match):
-
-        @binder.execute("UPDATE table SET col = #{arg1}")
-        @binder.transaction()
-        def should_raise_3(arg1: str):
-            pass  # pragma: no cover
-
-
-def test_args_mismatch_raises(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
-    """Tests an error is raised if a template is bound to a function without a matching argument."""
-    binder, _ = binder_and_pool
-
-    with pytest.raises(MissingTemplateArgument, match="specified in template but is not an argument of"):
-
-        @binder.execute("INSERT INTO table (#{arg})")
-        def should_raise_4(some_arg: str):
-            pass  # pragma: no cover
-
-
-def test_binder_raises_for_no_pool():
-    """Tests an error is raised when a bind has no pool but an operation requiring one is performed."""
-    binder = FunctionBinder()
-
-    @binder.execute("INSERT INTO table (#{arg})")
-    def test_bound_execute(arg: str):
+    @binder.query("SELECT some_num FROM table LIMIT 3")
+    def generating_query() -> Generator:
         pass  # pragma: no cover
 
-    with pytest.raises(NoPoolSetError, match="No connection pool"):
-        test_bound_execute("testing")
+    @binder.query("SELECT some_num FROM table LIMIT 3")
+    def generating_query_with_type() -> Generator[int, None, None]:
+        pass  # pragma: no cover
 
-    with pytest.raises(NoPoolSetError, match="No connection pool"):
-        with binder.connection() as cnx:  # noqa: F841
-            pass  # pragma: no cover
+    results = [x for x in generating_query()]
+    assert results == [(1,), (2,), (3,)]
+    cnx: MockConnection = pool.connection_stack.pop(0)
+    cnx.assert_clean()
+
+    results = [x for x in generating_query_with_type()]
+    assert results == [4, 5, 6]
+    cnx: MockConnection = pool.connection_stack.pop(0)
+    cnx.assert_clean()
 
 
-def test_binder_raises_for_pool_set_twice(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
-    """Tests an error is raised when a binder has its pool set twice."""
-    binder, _ = binder_and_pool
-    pool = MockConnectionPool([])
+@pytest.mark.parametrize(
+    "binder_and_pool",
+    [
+        [
+            MockDQLCursor([(1, "2", 3.0)], (("field_01", 0), ("field_02", 2), ("field_03", 3))),
+            MockDQLCursor([(1, "2", 3.0), (4, "5", 6.0)], (("field_01", 0), ("field_02", 2), ("field_03", 3))),
+        ],
+    ],
+    indirect=["binder_and_pool"],
+)
+def test_binder_class_return(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests binder when the result type is a class."""
+    binder, pool = binder_and_pool
 
-    with pytest.raises(PoolAlreadySetError, match="only be set once"):
-        binder.pool = pool
+    class ClassForTest:
+        def __init__(self, field_01: int, field_02: str, field_03: float):
+            assert field_01 == 1
+            assert field_02 == "2"
+            assert field_03 == 3.0
+
+    @binder.query("SELECT field_01, field_02, field_03 FROM WHERE arg = #{arg}")
+    def query_class_return(arg: str) -> ClassForTest:
+        pass  # pragma: no cover
+
+    result = query_class_return("test")
+    assert isinstance(result, ClassForTest)
+
+    with pytest.raises(TooManyRowsError, match="Only expected one row, but got 2"):
+        query_class_return("test2")
+
+
+@pytest.mark.parametrize(
+    "binder_and_pool",
+    [
+        [
+            MockDQLCursor([(1, "2", 3.0)], (("field_01", 0), ("field_02", 2), ("field_03", 3))),
+            MockDQLCursor([(1, "2", 3.0), (4, "5", 6.0)], (("field_01", 0), ("field_02", 2), ("field_03", 3))),
+        ],
+    ],
+    indirect=["binder_and_pool"],
+)
+def test_binder_dict_return(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests binder when the result type is a class."""
+    binder, pool = binder_and_pool
+
+    @binder.query("SELECT field_01, field_02, field_03 FROM WHERE arg = #{arg}")
+    def query_dict_return(arg: str) -> Mapping:
+        pass  # pragma: no cover
+
+    result = query_dict_return("test")
+    assert result == {"field_01": 1, "field_02": "2", "field_03": 3.0}
+
+    with pytest.raises(TooManyRowsError, match="Only expected one row, but got 2"):
+        query_dict_return("test2")

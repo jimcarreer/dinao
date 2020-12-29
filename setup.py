@@ -36,13 +36,13 @@ setup(
     test_suite="tests",
     install_requires=install_requires,
     tests_require=tests_require,
-    python_requires=">=3.7.0, <3.10",
+    python_requires=">=3.8.0, <3.11",
     extras_require={"tests": tests_require},
     classifiers=[
         "Topic :: Database",
         "Development Status :: 4 - Beta",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
 )

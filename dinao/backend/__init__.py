@@ -20,7 +20,7 @@ def create_connection_pool(db_url: str) -> ConnectionPool:
 
     With different db_backends / drivers supporting additional arguments.
 
-    :return: A connection pool based on the given database URL.
+    :returns: A connection pool based on the given database URL.
     :raises: ConfigurationError, UnsupportedBackend
     """
     parsed_url = urlparse(db_url)
