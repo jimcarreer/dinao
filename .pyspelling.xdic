@@ -18,6 +18,9 @@ concat
 conn
 contextlib
 contextmanager
+dataclass
+dataclasses
+datetime
 dbi
 dbname
 dinao
@@ -36,7 +39,9 @@ https
 ident
 impl
 init
+isclass
 isinstance
+iterable
 json
 jsonify
 kwarg
@@ -49,6 +54,7 @@ msg
 noqa
 ns
 num
+ok
 param
 params
 postgres

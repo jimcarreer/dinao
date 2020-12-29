@@ -3,10 +3,24 @@
 import logging
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
+from dataclasses import dataclass
 from typing import List, Tuple
 from urllib.parse import parse_qs, urlparse
 
 from dinao.backend.errors import ConfigurationError
+
+
+@dataclass
+class ColumnDescriptor:
+    """Describes a column in a result set."""
+
+    name: str
+    type_code: int
+    display_size: int = None
+    internal_size: int = None
+    precision: int = None
+    scale: int = None
+    null_ok: bool = None
 
 
 class ResultSet:
@@ -18,31 +32,44 @@ class ResultSet:
         :param cursor: the underlying DB API 2.0 cursor being wrapped by this object.
         """
         self._cursor = cursor
+        self._columns = None
+        self._description = None
 
-    def fetchone(self) -> tuple:
+    def fetchone(self) -> Tuple:
         """Fetch one result tuple from the underlying cursor.
 
         If no results are left, None is returned.
 
-        :return: a tuple representing a result row or None
+        :returns: a tuple representing a result row or None
         """
         return self._cursor.fetchone()
 
-    def fetchall(self) -> List[tuple]:
+    def fetchall(self) -> List[Tuple]:
         """Fetch the *remaining* result tuples from the underlying cursor.
 
         If no results are left, an empty list is returned.
 
-        :return: a list of tuples that are the remaining results of the underlying cursor.
+        :returns: a list of tuples that are the remaining results of the underlying cursor.
         """
         return self._cursor.fetchall()
 
-    def columns(self) -> Tuple[str]:
-        """Return a tuple representing the column names of the result set.
+    @property
+    def description(self) -> Tuple[ColumnDescriptor]:
+        """Return a sequence of column descriptions representing the result set.
 
-        :return: a tuple of strings that are column names matching the order of results.
+        :returns: a tuple of ColumnDescriptors
         """
-        return tuple([str(d[0]) for d in self._cursor.description])
+        if not self._description:
+            self._description = tuple([ColumnDescriptor(*d) for d in self._cursor.description])
+        return self._description
+
+    @property
+    def rowcount(self) -> int:
+        """Return the row count of the result set.
+
+        :returns: the integer count of the rows in the result set
+        """
+        return self._cursor.rowcount
 
 
 class Connection(ABC):
@@ -80,8 +107,10 @@ class Connection(ABC):
         """
         cursor = self._cnx.cursor()
         self._execute(cursor, sql, params)
-        yield ResultSet(cursor)
-        cursor.close()
+        try:
+            yield ResultSet(cursor)
+        finally:
+            cursor.close()
 
     def execute(self, sql: str, params: tuple = None, commit: bool = None) -> int:
         """Execute the given SQL as a statement with the given parameters and return the affected row count.

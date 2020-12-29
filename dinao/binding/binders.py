@@ -2,18 +2,22 @@
 
 import inspect
 import threading
+import typing
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 
-from dinao.backend.base import Connection, ConnectionPool
+from dinao.backend.base import Connection, ConnectionPool, ResultSet
 from dinao.binding.errors import (
     BadReturnType,
+    CannotInferMappingError,
     FunctionAlreadyBound,
     MissingTemplateArgument,
     NoPoolSetError,
     PoolAlreadySetError,
     TemplateError,
+    TooManyRowsError,
 )
+from dinao.binding.mappers import DICT_GENERICS, GENERATOR_GENERICS, LIST_GENERICS, RowMapper, get_row_mapper
 from dinao.binding.templating import Template
 
 
@@ -116,6 +120,9 @@ class FunctionBinder:
         def decorated(func: callable):
             self._raise_for_multi_binding(func)
             template = self._make_template(sql)
+            return_type = typing.get_origin(inspect.signature(func).return_annotation)
+            if return_type in GENERATOR_GENERICS:
+                return BoundedGeneratingQuery(self, template, func)
             return BoundedQuery(self, template, func)
         return decorated
         # fmt: on
@@ -230,23 +237,63 @@ class BoundedSQLFunction(BoundedFunction):
 class BoundedQuery(BoundedSQLFunction):
     """Implementation of a bounded function that represents a SQL query that returns rows."""
 
-    def __init__(self, binder: FunctionBinder, sql_template: Template, func: callable):
+    def __init__(self, binder: FunctionBinder, sql_template: Template, func: callable, row_mapper: RowMapper = None):
         """Construct a BoundSQLFunction that returns result sets.
 
         :param binder: the binder to which this bound function belongs
         :param sql_template: the template to use for resolving SQL parameters / munged sql.
         :param func: the callable being bound to the given SQL
+        :param row_mapper: a RowMapper implementation that overrides the mapper inferred from the return annotation
+
+        :raises CannotInferMappingError
         """
         super().__init__(binder, sql_template, func)
-        self._returns_none = False
-        self._returns_directly = False
-        if self._sig.return_annotation is None:
-            self._returns_none = True
-        elif self._sig.return_annotation == self._sig.empty:
-            self._returns_directly = True
+        self._row_mapper = None
+        self._return_impl = None
+
+        return_type = self._sig.return_annotation
+        # Default (a.k.a Signature.empty) if no return type given is List[tuple]
+        if return_type == inspect.Signature.empty:
+            return_type = typing.List[tuple]
+
+        generic_type = typing.get_origin(return_type)
+        generic_args = typing.get_args(return_type)
+        returns_none = False
+        row_type = None
+
+        if return_type in [None, typing.NoReturn]:
+            self._return_impl = self._none_return
+            returns_none = True
+        # Classes / Dataclasses etc ...
+        elif return_type and not generic_type:
+            self._return_impl = self._one_return
+            row_type = return_type
+        # Single dictionary returns, no key / value typing suggested
+        elif generic_type in DICT_GENERICS and not generic_args:
+            self._return_impl = self._one_return
+            row_type = dict
+        elif generic_type in LIST_GENERICS:
+            self._return_impl = self._many_return
+            row_type = generic_args[0] if generic_args else tuple
         else:
-            # TODO: Actually implement mapper/mapping support
-            raise NotImplementedError("Return mapping not implemented")  # pragma: no cover
+            raise CannotInferMappingError(f"Unable to determine mapper for {return_type}")
+
+        self._row_mapper = row_mapper or get_row_mapper(row_type)
+        if not returns_none and not self._row_mapper:
+            raise CannotInferMappingError(f"Unable to determine row mapper for {row_type}")
+
+    @staticmethod
+    def _none_return(results: ResultSet):
+        return None
+
+    def _one_return(self, results: ResultSet):
+        if results.rowcount > 1:
+            raise TooManyRowsError(f"Only expected one row, but got {results.rowcount}")
+        raw = results.fetchone()
+        return self._row_mapper(raw, results.description) if raw else None
+
+    def _many_return(self, results: ResultSet):
+        return [self._row_mapper(row, results.description) for row in results.fetchall()]
 
     def __call__(self, *args, **kwargs):
         """Execute the templated SQL as a query with results.
@@ -259,9 +306,49 @@ class BoundedQuery(BoundedSQLFunction):
         sql, values = self._sql_template.render(self._binder.mung_symbol, bound.arguments)
         with self._binder.connection() as cnx:
             with cnx.query(sql, values) as results:
-                if self._returns_none:
-                    return None
-                return results.fetchall()
+                return self._return_impl(results)
+
+
+class BoundedGeneratingQuery(BoundedSQLFunction):
+    """Implementation of a bounded function that represents a SQL query that returns rows via a generator."""
+
+    def __init__(self, binder: FunctionBinder, sql_template: Template, func: callable, row_mapper: RowMapper = None):
+        """Construct a BoundedGeneratingQuery that returns result sets.
+
+        :param binder: the binder to which this bound function belongs
+        :param sql_template: the template to use for resolving SQL parameters / munged sql.
+        :param func: the callable being bound to the given SQL
+        :param row_mapper: a RowMapper implementation that overrides the mapper inferred from the return annotation
+
+        :raises CannotInferMappingError, BadReturnType
+        """
+        super().__init__(binder, sql_template, func)
+        self._row_mapper = None
+        return_type = self._sig.return_annotation
+        generic_type = typing.get_origin(return_type)
+        generic_args = typing.get_args(return_type)
+        if generic_type not in GENERATOR_GENERICS:
+            raise BadReturnType(f"Expected results type to be Generator, got {generic_type}")
+        # Generators require 3 args but we only support mapping the yield type
+        if generic_args and generic_args[1:3] != (type(None), type(None)):
+            raise CannotInferMappingError("Only yield_type should be specified for a generator")
+        self._row_mapper = row_mapper or get_row_mapper(generic_args[0] if generic_args else tuple)
+
+    def __call__(self, *args, **kwargs):
+        """Execute the templated SQL as a query with results.
+
+        :param args: the positional arguments of the bounded / decorated function
+        :param kwargs: the keyword arguments of the bounded / decorated function
+        """
+        bound = self._sig.bind(*args, **kwargs)
+        bound.apply_defaults()
+        sql, values = self._sql_template.render(self._binder.mung_symbol, bound.arguments)
+        with self._binder.connection() as cnx:
+            with cnx.query(sql, values) as results:
+                row = results.fetchone()
+                while row:
+                    yield self._row_mapper(row, results.description)
+                    row = results.fetchone()
 
 
 class BoundedExecution(BoundedSQLFunction):
