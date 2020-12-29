@@ -39,7 +39,7 @@ def test_cannot_infer_nested_generic(binder_and_pool: Tuple[FunctionBinder, Mock
 
         @binder.query("SELECT * FROM table")
         def raises_cannot_infer_row_type() -> List[List[str]]:
-            pass   # pragma: no cover
+            pass  # pragma: no cover
 
 
 def test_binding_generator_throws(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
