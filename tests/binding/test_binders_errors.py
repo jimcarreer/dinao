@@ -159,4 +159,4 @@ def test_binder_raises_for_double_connection_arg(binder_and_pool: Tuple[Function
 
         @binder.transaction()
         def should_raise_5(cnx1: Connection, cnx2: MockConnection):
-            pass
+            pass  # pragma: no cover

@@ -205,7 +205,7 @@ def test_binder_passes_cnx(binder_and_pool: Tuple[FunctionBinder, MockConnection
 
     @binder.execute("DELETE FROM table")
     def clear_table() -> int:
-        pass
+        pass  # pragma: no cover
 
     @binder.transaction()
     def do_something(my_arg: str, connection: MockConnection = None) -> int:
