@@ -157,7 +157,7 @@ def test_binder_class_return(binder_and_pool: Tuple[FunctionBinder, MockConnecti
     indirect=["binder_and_pool"],
 )
 def test_binder_dict_return(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
-    """Tests binder when the result type is a class."""
+    """Tests binder when the result type is a dictionary like object."""
     binder, pool = binder_and_pool
 
     @binder.query("SELECT field_01, field_02, field_03 FROM WHERE arg = #{arg}")
@@ -169,3 +169,20 @@ def test_binder_dict_return(binder_and_pool: Tuple[FunctionBinder, MockConnectio
 
     with pytest.raises(TooManyRowsError, match="Only expected one row, but got 2"):
         query_dict_return("test2")
+
+
+def test_binder_roles_back(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests the binder rolls back a connection if a bound function raises."""
+    binder, pool = binder_and_pool
+
+    @binder.transaction()
+    def raises_for_roll_back():
+        raise Exception("Will trigger a roll back")
+
+    with pytest.raises(Exception, match="Will trigger a roll back"):
+        raises_for_roll_back()
+
+    cnx: MockConnection = pool.connection_stack.pop(0)
+    assert cnx.released
+    assert cnx.committed == 0
+    assert cnx.rollbacks == 1
