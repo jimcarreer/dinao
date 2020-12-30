@@ -186,3 +186,43 @@ def test_binder_roles_back(binder_and_pool: Tuple[FunctionBinder, MockConnection
     assert cnx.released
     assert cnx.committed == 0
     assert cnx.rollbacks == 1
+
+
+@pytest.mark.parametrize(
+    "binder_and_pool",
+    [
+        [
+            MockDMLCursor(3),
+            MockDMLCursor(1),
+            MockDQLCursor([(1,), (2,), (3,)], (("some_num", 99),)),
+        ],
+    ],
+    indirect=["binder_and_pool"],
+)
+def test_binder_passes_cnx(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests that the binder will pass the active connection if requested."""
+    binder, pool = binder_and_pool
+
+    @binder.execute("DELETE FROM table")
+    def clear_table() -> int:
+        pass
+
+    @binder.transaction()
+    def do_something(my_arg: str, connection: MockConnection = None) -> int:
+        clear_table()
+        count = connection.execute("INSERT INTO table (%s), (%s)", (1, 2))
+        summed = 0
+        if count > 0:
+            with connection.query("SELECT * FROM table WHERE thing = %s", (my_arg,)) as results:
+                summed = sum([row[0] for row in results.fetchall()])
+        return summed
+
+    assert do_something("test") == 6
+    assert len(pool.connection_stack) == 1
+    cnx: MockConnection = pool.connection_stack.pop(0)
+    cnx.assert_clean()
+    assert cnx.query_stack == [
+        ("DELETE FROM table", ()),
+        ("INSERT INTO table (%s), (%s)", (1, 2)),
+        ("SELECT * FROM table WHERE thing = %s", ("test",)),
+    ]

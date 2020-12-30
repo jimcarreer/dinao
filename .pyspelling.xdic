@@ -41,6 +41,7 @@ impl
 init
 isclass
 isinstance
+issubclass
 iterable
 json
 jsonify

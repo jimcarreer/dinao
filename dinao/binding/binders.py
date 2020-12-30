@@ -12,6 +12,7 @@ from dinao.binding.errors import (
     CannotInferMappingError,
     FunctionAlreadyBoundError,
     MissingTemplateArgumentError,
+    MultipleConnectionArgumentError,
     NoPoolSetError,
     PoolAlreadySetError,
     TemplateError,
@@ -390,6 +391,23 @@ class BoundedExecution(BoundedSQLFunction):
 class BoundedTransaction(BoundedFunction):
     """Implementation of a bounded function whose call is done within a database transaction."""
 
+    def __init__(self, binder: FunctionBinder, func: callable):
+        """Construct a BoundFunction that represents a transaction.
+
+        :param binder: the binder to which this bound function belongs
+        :param func: the callable being bound to the given SQL
+
+        :raises: MultipleConnectionArgumentError
+        """
+        super().__init__(binder, func)
+        self._cnx_arg_name = None
+        for name in self._sig.parameters:
+            if issubclass(self._sig.parameters[name].annotation, Connection):
+                if self._cnx_arg_name is not None:
+                    error = f"Connection argument specified multiple times for {self.bounded_function.__name__}"
+                    raise MultipleConnectionArgumentError(error)
+                self._cnx_arg_name = name
+
     def __str__(self) -> str:
         """Return a simple representation of a transaction bound function."""
         return f"{self.__class__.__name__} ({self.bounded_function.__name__})"
@@ -400,5 +418,8 @@ class BoundedTransaction(BoundedFunction):
         :param args: the positional arguments of the bounded / decorated function
         :param kwargs: the keyword arguments of the bounded / decorated function
         """
-        with self._binder.connection():
+        with self._binder.connection() as cnx:
+            if self._cnx_arg_name:
+                kwargs = kwargs or {}
+                kwargs[self._cnx_arg_name] = cnx
             return self._func(*args, **kwargs)

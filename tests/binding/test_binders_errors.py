@@ -2,6 +2,7 @@
 
 from typing import Generator, List, Tuple, Union
 
+from dinao.backend import Connection
 from dinao.binding import FunctionBinder
 from dinao.binding.binders import BoundedGeneratingQuery
 from dinao.binding.errors import (
@@ -9,6 +10,7 @@ from dinao.binding.errors import (
     CannotInferMappingError,
     FunctionAlreadyBoundError,
     MissingTemplateArgumentError,
+    MultipleConnectionArgumentError,
     NoPoolSetError,
     PoolAlreadySetError,
     TemplateError,
@@ -17,7 +19,7 @@ from dinao.binding.templating import Template
 
 import pytest
 
-from tests.binding.mocks import MockConnectionPool
+from tests.binding.mocks import MockConnection, MockConnectionPool
 
 
 def test_cannot_infer_generic(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
@@ -147,3 +149,14 @@ def test_binder_raises_for_pool_set_twice(binder_and_pool: Tuple[FunctionBinder,
 
     with pytest.raises(PoolAlreadySetError, match="only be set once"):
         binder.pool = pool
+
+
+def test_binder_raises_for_double_connection_arg(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests an error is raised when a bound function specifies it would like more than one connection."""
+    binder, _ = binder_and_pool
+
+    with pytest.raises(MultipleConnectionArgumentError, match="Connection argument specified multiple times for"):
+
+        @binder.transaction()
+        def should_raise_5(cnx1: Connection, cnx2: MockConnection):
+            pass
