@@ -181,9 +181,9 @@ class FunctionBinder:
         Any exception caught during the context of a connection will trigger a rollback of the transaction.  The
         transaction is automatically committed when execution is yielded back.
         """
-        active_cnx = getattr(self._context_store, "active_cnx", None)
         if self._cnx_pool is None:
             raise NoPoolSetError("No connection pool has been set for the binder")
+        active_cnx = getattr(self._context_store, "active_cnx", None)
         if active_cnx:
             yield active_cnx
             return
@@ -191,6 +191,9 @@ class FunctionBinder:
         try:
             yield self._context_store.active_cnx
             self._context_store.active_cnx.commit()
+        except:  # noqa: E722
+            self._context_store.active_cnx.rollback()
+            raise
         finally:
             self.pool.release(self._context_store.active_cnx)
             self._context_store.active_cnx = None
