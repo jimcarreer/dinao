@@ -27,7 +27,7 @@ class ConnectionPoolSQLite3(ConnectionPool):
         Obviously, this is not a real "pool", all connections given out by lease will be new connections.
 
         :param db_url: a url with the described format
-        :raises: ConfigurationError, BackendEngineNotInstalled
+        :raises: ConfigurationError, BackendNotInstalledError
         """
         super().__init__(db_url)
         self._cnx_kwargs = self._url_to_cnx_kwargs(db_url)

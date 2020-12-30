@@ -1,7 +1,7 @@
 """Defines common errors raised from database backend code."""
 
 
-class UnsupportedBackend(Exception):
+class UnsupportedBackendError(Exception):
     """Raised when an unsupported backend is specified."""
 
     pass
@@ -13,7 +13,7 @@ class ConfigurationError(Exception):
     pass
 
 
-class BackendEngineNotInstalled(Exception):
+class BackendNotInstalledError(Exception):
     """Raised when a backend engine is not installed."""
 
     pass

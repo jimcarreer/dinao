@@ -31,7 +31,7 @@ class TemplateError(BindingError):
     pass
 
 
-class FunctionAlreadyBound(BindingError):
+class FunctionAlreadyBoundError(BindingError):
     """Raised when a function is bound more than once to a query, execution, or transaction."""
 
     pass
@@ -43,13 +43,13 @@ class SignatureError(BindingError):
     pass
 
 
-class BadReturnType(SignatureError):
+class BadReturnTypeError(SignatureError):
     """Raised when a return hint specifies a type that cannot be used for mapping in the context of the binding."""
 
     pass
 
 
-class MissingTemplateArgument(SignatureError):
+class MissingTemplateArgumentError(SignatureError):
     """Raised when a template specifies an argument not found in its bounded function's signature."""
 
     pass
