@@ -61,6 +61,12 @@ class CannotInferMappingError(SignatureError):
     pass
 
 
+class MultipleConnectionArgumentError(SignatureError):
+    """Raised when a bound function specifies multiple connection arguments."""
+
+    pass
+
+
 class TooManyValuesError(MappingError):
     """Raised when the number of columns does not match the expected number for mapping."""
 
