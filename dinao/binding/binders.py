@@ -8,10 +8,10 @@ from contextlib import contextmanager
 
 from dinao.backend.base import Connection, ConnectionPool, ResultSet
 from dinao.binding.errors import (
-    BadReturnType,
+    BadReturnTypeError,
     CannotInferMappingError,
-    FunctionAlreadyBound,
-    MissingTemplateArgument,
+    FunctionAlreadyBoundError,
+    MissingTemplateArgumentError,
     NoPoolSetError,
     PoolAlreadySetError,
     TemplateError,
@@ -40,7 +40,7 @@ class FunctionBinder:
         if isinstance(func, BoundedFunction):
             name = func.bounded_function.__name__
             error = f"The function {name} has already been bounded by {func}"
-            self._suppressed_raise(FunctionAlreadyBound(error))
+            self._suppressed_raise(FunctionAlreadyBoundError(error))
 
     def _make_template(self, sql: str):
         try:
@@ -88,7 +88,7 @@ class FunctionBinder:
 
         :param sql: a SQL template to bind the function execution to
         :returns: a decorator expecting a callable
-        :raises: BadReturnType, FunctionAlreadyBound
+        :raises: BadReturnTypeError, FunctionAlreadyBoundError
         """
         # fmt: off
         def decorated(func: callable):
@@ -114,7 +114,7 @@ class FunctionBinder:
 
         :param sql: a SQL template to bind the function execution to
         :returns: a decorator expecting a callable
-        :raises: NotImplementedError, FunctionAlreadyBound
+        :raises: NotImplementedError, FunctionAlreadyBoundError
         """
         # fmt: off
         def decorated(func: callable):
@@ -156,7 +156,7 @@ class FunctionBinder:
                 return my_update(stat=stat)
 
         :returns: a decorator expecting a callable
-        :raises: NotImplementedError, FunctionAlreadyBound
+        :raises: NotImplementedError, FunctionAlreadyBoundError
         """
         # fmt: off
         def decorated(func: callable):
@@ -226,7 +226,7 @@ class BoundedSQLFunction(BoundedFunction):
         for arg_id in sql_template.arguments:
             if arg_id[0] not in self._sig.parameters:
                 error = f"Argument '{arg_id[0]}' specified in template but is not an argument of {func.__name__}"
-                raise MissingTemplateArgument(error)
+                raise MissingTemplateArgumentError(error)
 
     def __str__(self) -> str:
         """Return a simple representation of a SQL bound function."""
@@ -323,7 +323,7 @@ class BoundedGeneratingQuery(BoundedSQLFunction):
         :param func: the callable being bound to the given SQL
         :param row_mapper: a RowMapper implementation that overrides the mapper inferred from the return annotation
 
-        :raises CannotInferMappingError, BadReturnType
+        :raises CannotInferMappingError, BadReturnTypeError
         """
         super().__init__(binder, sql_template, func)
         self._row_mapper = None
@@ -331,7 +331,7 @@ class BoundedGeneratingQuery(BoundedSQLFunction):
         generic_type = typing.get_origin(return_type)
         generic_args = typing.get_args(return_type)
         if generic_type not in GENERATOR_GENERICS:
-            raise BadReturnType(f"Expected results type to be Generator, got {generic_type}")
+            raise BadReturnTypeError(f"Expected results type to be Generator, got {generic_type}")
         # Generators require 3 args but we only support mapping the yield type
         if generic_args and generic_args[1:3] != (type(None), type(None)):
             raise CannotInferMappingError("Only yield_type should be specified for a generator")
@@ -364,14 +364,14 @@ class BoundedExecution(BoundedSQLFunction):
         :param sql_template: the template to use for resolving SQL parameters / munged sql.
         :param func: the callable being bound to the given SQL
 
-        :raises: BadReturnType
+        :raises: BadReturnTypeError
         """
         super().__init__(binder, sql_template, func)
         self._returns_none = False
         if self._sig.return_annotation == self._sig.empty or self._sig.return_annotation is None:
             self._returns_none = True
         elif self._sig.return_annotation != int:
-            raise BadReturnType("Bound executions can only return None or int (e.g. affected rows)")
+            raise BadReturnTypeError("Bound executions can only return None or int (e.g. affected rows)")
 
     def __call__(self, *args, **kwargs):
         """Execute the templated SQL as a query without results.

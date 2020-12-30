@@ -5,10 +5,10 @@ from typing import Generator, List, Tuple, Union
 from dinao.binding import FunctionBinder
 from dinao.binding.binders import BoundedGeneratingQuery
 from dinao.binding.errors import (
-    BadReturnType,
+    BadReturnTypeError,
     CannotInferMappingError,
-    FunctionAlreadyBound,
-    MissingTemplateArgument,
+    FunctionAlreadyBoundError,
+    MissingTemplateArgumentError,
     NoPoolSetError,
     PoolAlreadySetError,
     TemplateError,
@@ -60,7 +60,7 @@ def test_bounded_generating_query_throws(binder_and_pool: Tuple[FunctionBinder, 
     def not_a_generator() -> int:
         pass  # pragma: no cover
 
-    with pytest.raises(BadReturnType, match="Expected results type to be Generator"):
+    with pytest.raises(BadReturnTypeError, match="Expected results type to be Generator"):
         BoundedGeneratingQuery(binder, Template("SELECT * FROM table"), not_a_generator)
 
 
@@ -68,7 +68,7 @@ def test_binder_execute_bad_type(binder_and_pool: Tuple[FunctionBinder, MockConn
     """Tests that binding a function specifying an invalid return type for execution raises an exception."""
     binder, _ = binder_and_pool
 
-    with pytest.raises(BadReturnType, match="can only return None or int"):
+    with pytest.raises(BadReturnTypeError, match="can only return None or int"):
 
         @binder.execute("INSERT INTO TABLE (#{arg1})")
         def should_raise(arg1: str) -> List:
@@ -91,21 +91,21 @@ def test_double_binding_raises(binder_and_pool: Tuple[FunctionBinder, MockConnec
     binder, _ = binder_and_pool
     match = "has already been bounded by"
 
-    with pytest.raises(FunctionAlreadyBound, match=match):
+    with pytest.raises(FunctionAlreadyBoundError, match=match):
 
         @binder.execute("UPDATE table SET col = #{arg1}")
         @binder.execute("INSERT INTO TABLE (#{arg1})")
         def should_raise_1(arg1: str):
             pass  # pragma: no cover
 
-    with pytest.raises(FunctionAlreadyBound, match=match):
+    with pytest.raises(FunctionAlreadyBoundError, match=match):
 
         @binder.execute("UPDATE table SET col = #{arg1}")
         @binder.query("SELECT * FROM table WHERE col = #{arg1})")
         def should_raise_2(arg1: str):
             pass  # pragma: no cover
 
-    with pytest.raises(FunctionAlreadyBound, match=match):
+    with pytest.raises(FunctionAlreadyBoundError, match=match):
 
         @binder.execute("UPDATE table SET col = #{arg1}")
         @binder.transaction()
@@ -117,7 +117,7 @@ def test_args_mismatch_raises(binder_and_pool: Tuple[FunctionBinder, MockConnect
     """Tests an error is raised if a template is bound to a function without a matching argument."""
     binder, _ = binder_and_pool
 
-    with pytest.raises(MissingTemplateArgument, match="specified in template but is not an argument of"):
+    with pytest.raises(MissingTemplateArgumentError, match="specified in template but is not an argument of"):
 
         @binder.execute("INSERT INTO table (#{arg})")
         def should_raise_4(some_arg: str):

@@ -1,7 +1,7 @@
 """Miscellaneous tests for backend utilities."""
 
 from dinao.backend import create_connection_pool
-from dinao.backend.errors import ConfigurationError, UnsupportedBackend
+from dinao.backend.errors import ConfigurationError, UnsupportedBackendError
 
 import pytest
 
@@ -10,8 +10,8 @@ import pytest
     "db_uri, match, except_class",
     [
         ("://user:pass@host:4444", "No database backend specified", ConfigurationError),
-        ("oracle://user:pass@host:4444", "not supported", UnsupportedBackend),
-        ("postgresql+psycopg3://user:pass@host:4444", "not supported", UnsupportedBackend),
+        ("oracle://user:pass@host:4444", "not supported", UnsupportedBackendError),
+        ("postgresql+psycopg3://user:pass@host:4444", "not supported", UnsupportedBackendError),
         ("postgresql://user:pass@host:4444", "name is required but missing", ConfigurationError),
         ("postgresql://user:pass@host:4444/dbname?pool_max_conn=ABC", "must be int", ConfigurationError),
         ("postgresql://user:pass@host:4444/dbname?pool_min_conn=ABC", "must be int", ConfigurationError),
@@ -37,7 +37,7 @@ import pytest
             "single value",
             ConfigurationError,
         ),
-        ("sqlite3+invalid://test.db", "not supported", UnsupportedBackend),
+        ("sqlite3+invalid://test.db", "not supported", UnsupportedBackendError),
         ("sqlite3://test.db?schema=test", "Unexpected argument", ConfigurationError),
     ],
 )

@@ -1,7 +1,7 @@
 """Implementation of postgres backends."""
 
 from dinao.backend.base import Connection, ConnectionPool
-from dinao.backend.errors import BackendEngineNotInstalled, ConfigurationError
+from dinao.backend.errors import BackendNotInstalledError, ConfigurationError
 
 
 class ConnectionPSQLPsycopg2(Connection):
@@ -29,14 +29,14 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPool):
             * pool_threaded, a boolean specifying a threaded pool should be used, defaults to False
 
         :param db_url: a url with the described format
-        :raises: ConfigurationError, BackendEngineNotInstalled
+        :raises: ConfigurationError, BackendNotInstalledError
         """
         super().__init__(db_url)
         try:
             import psycopg2.pool
         except ModuleNotFoundError:  # pragma: no cover
             issue = "Module psycopg2 not installed, cannot create connection pool"
-            raise BackendEngineNotInstalled(issue)
+            raise BackendNotInstalledError(issue)
         self._cnx_kwargs = self._make_cnx_kwargs()
         self._pool_class = psycopg2.pool.SimpleConnectionPool
         if self._get_arg("pool_threaded", bool, False):
