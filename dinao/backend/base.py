@@ -85,6 +85,15 @@ class Connection(ABC):
         self._cnx = cnx
         self._auto_commit = auto_commit
 
+    @property
+    def autocommit(self):
+        """Whether or not commit is called after every call to query(...) and execute(...)."""
+        return self._auto_commit
+
+    @autocommit.setter
+    def autocommit(self, value: bool):
+        self._auto_commit = value
+
     def commit(self):
         """Commit changes for this connection / transaction to the database."""
         self._cnx.commit()

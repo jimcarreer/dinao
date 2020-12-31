@@ -108,6 +108,8 @@ class MockConnection(Connection):
     def query(self, sql: str, params: tuple = None) -> ResultSet:  # noqa: D102
         self.query_stack.append((sql, params))
         self.queries += 1
+        if self.autocommit:
+            self.commit()
         if not self.cursor_stack:  # pragma: no cover
             msg = f"Mocked results exhausted: query(sql={sql}, params={params}), call number {self.queries}"
             raise Exception(msg)
@@ -116,6 +118,9 @@ class MockConnection(Connection):
 
     def execute(self, sql: str, params: tuple = None, commit: bool = None) -> int:  # noqa: D102
         self.query_stack.append((sql, params))
+        commit = commit if commit is not None else self._auto_commit
+        if commit:
+            self.commit()
         self.executions += 1
         if not self.cursor_stack:  # pragma: no cover
             msg = f"Mocked results exhausted: execute(sql={sql}, params={params}), call number {self.executions}"

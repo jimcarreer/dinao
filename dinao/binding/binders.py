@@ -419,6 +419,7 @@ class BoundedTransaction(BoundedFunction):
         :param kwargs: the keyword arguments of the bounded / decorated function
         """
         with self._binder.connection() as cnx:
+            cnx.autocommit = False
             if self._cnx_arg_name:
                 kwargs = kwargs or {}
                 kwargs[self._cnx_arg_name] = cnx
