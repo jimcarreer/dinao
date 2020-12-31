@@ -5,6 +5,7 @@ api
 arg
 args
 atexit
+autocommit
 backend
 backends
 bool

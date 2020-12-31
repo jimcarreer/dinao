@@ -221,6 +221,7 @@ def test_binder_passes_cnx(binder_and_pool: Tuple[FunctionBinder, MockConnection
     assert len(pool.connection_stack) == 1
     cnx: MockConnection = pool.connection_stack.pop(0)
     cnx.assert_clean()
+    assert cnx.committed == 1
     assert cnx.query_stack == [
         ("DELETE FROM table", ()),
         ("INSERT INTO table (%s), (%s)", (1, 2)),
