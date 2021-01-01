@@ -1,5 +1,5 @@
 matrix:
-  - name: Python Source
+  - name: Spell Checking
     aspell:
       lang: en
       d: en_US
@@ -9,5 +9,10 @@ matrix:
       wordlists:
         - .pyspelling.xdic
     sources:
-      - dinao/**/*.py
-      - examples/**/*.py
+      - ./dinao/**/*.py
+      - ./*.rst
+      - ./dinao/LICENSE
+      - ./examples/**/*.rst
+      - ./examples/**/*.py
+    pipeline:
+      - pyspelling.filters.url:

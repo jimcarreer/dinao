@@ -1,5 +1,3 @@
-# pip install dinao
-# pip install psycopg2-binary
 from dinao.binding import FunctionBinder
 
 binder = FunctionBinder()
@@ -56,3 +54,4 @@ def populate():
     upsert("testing", 52)
     upsert("test", 39)
     upsert("other_thing", 20)
+    upsert("test", 50)

@@ -2,7 +2,7 @@ import dbi
 from dinao.backend import create_connection_pool
 
 if __name__ == '__main__':
-    con_url = "sqlite3:///tmp/test_db.db"
+    con_url = "sqlite3:///tmp/example.db"
     db_pool = create_connection_pool(con_url)
     dbi.binder.pool = db_pool
     dbi.populate()
