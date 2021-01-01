@@ -4,6 +4,7 @@ alphanums
 api
 arg
 args
+aspell
 atexit
 autocommit
 backend
@@ -34,6 +35,7 @@ func
 getattr
 getconn
 github
+gunicorn
 hostname
 http
 https
@@ -44,6 +46,7 @@ isclass
 isinstance
 issubclass
 iterable
+jdbi
 json
 jsonify
 kwarg
@@ -53,11 +56,14 @@ localhost
 maxconn
 minconn
 msg
+batis
 noqa
 ns
 num
 ok
+orm
 param
+parametrization
 params
 postgres
 postgresql
@@ -66,13 +72,22 @@ printables
 psql
 psycopg
 putconn
+py
 pyparsing
+pypiv
+pyspelling
+pyver
 qs
 randint
+readme
+restructuredtext
 rowcount
+rst
+sexualized
 sig
 sigint
 sigterm
+socio
 sql
 sqlite
 staticmethod
@@ -89,3 +104,5 @@ urllib
 urlparse
 uuid
 varchar
+wsgi
+xdic

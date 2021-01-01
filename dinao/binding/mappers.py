@@ -1,6 +1,6 @@
 """Mapper interface definition and stock implementations."""
 
-import collections
+import collections.abc
 import inspect
 import typing
 from abc import ABC, abstractmethod
@@ -11,9 +11,9 @@ from dinao.backend.base import ColumnDescriptor
 from dinao.binding.errors import TooManyValuesError
 
 TUPLE_GENERICS = [tuple, typing.Tuple]
-GENERATOR_GENERICS = [collections.Generator, typing.Generator]
-DICT_GENERICS = [dict, typing.Dict, typing.Mapping, collections.Mapping]
-LIST_GENERICS = [list, typing.List, typing.Iterable, collections.Sequence, collections.Iterable]
+GENERATOR_GENERICS = [collections.abc.Generator, typing.Generator]
+DICT_GENERICS = [dict, typing.Dict, typing.Mapping, collections.abc.Mapping]
+LIST_GENERICS = [list, typing.List, typing.Iterable, collections.abc.Sequence, collections.abc.Iterable]
 NATIVE_SINGLE = [str, int, float, complex, datetime, UUID]
 
 
