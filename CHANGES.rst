@@ -1,9 +1,19 @@
 Change Log
 ==========
 
+<NEXT VERSION>
+--------------
+Place holder for next version.
+
+Features
+########
+
+Bug Fixes
+#########
+
 1.0.2
 -----
-Release for very annoying bug
+Release for very annoying bug.
 
 Bug Fixes
 #########
