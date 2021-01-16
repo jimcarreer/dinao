@@ -1,4 +1,5 @@
 abc
+abspath
 abstractmethod
 alphanums
 api
@@ -9,6 +10,7 @@ atexit
 autocommit
 backend
 backends
+batis
 bool
 boolean
 classmethod
@@ -28,6 +30,7 @@ dbname
 dinao
 elif
 exc
+expanduser
 fetchall
 fetchone
 fmt
@@ -56,12 +59,12 @@ localhost
 maxconn
 minconn
 msg
-batis
 noqa
 ns
 num
 ok
 orm
+os
 param
 parametrization
 params
@@ -98,6 +101,7 @@ tid
 tmp
 todo
 traceback
+travis
 upsert
 url
 urllib

@@ -1,6 +1,5 @@
 """Implementation of SQLite backends."""
 import os.path
-
 import sqlite3
 
 from dinao.backend.base import Connection, ConnectionPool

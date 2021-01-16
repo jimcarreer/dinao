@@ -5,8 +5,8 @@ Change Log
 -----
 Release for very annoying bug
 
-Bugfixes
-########
+Bug Fixes
+#########
 * SQLite backend now supports relative paths and user home expansion
 
 
