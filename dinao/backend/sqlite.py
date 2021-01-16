@@ -1,4 +1,6 @@
 """Implementation of SQLite backends."""
+import os.path
+
 import sqlite3
 
 from dinao.backend.base import Connection, ConnectionPool
@@ -30,11 +32,12 @@ class ConnectionPoolSQLite3(ConnectionPool):
         :raises: ConfigurationError, BackendNotInstalledError
         """
         super().__init__(db_url)
-        self._cnx_kwargs = self._url_to_cnx_kwargs(db_url)
+        self._cnx_kwargs = self._url_to_cnx_kwargs()
         self._raise_for_unexpected_args()
 
-    def _url_to_cnx_kwargs(self, url: str):
-        return {"database": self._db_url.path}
+    def _url_to_cnx_kwargs(self):
+        file_path = os.path.abspath(os.path.expanduser(self._db_url.path))
+        return {"database": file_path}
 
     def lease(self) -> Connection:  # noqa: D102
         inner_cnx = sqlite3.connect(**self._cnx_kwargs)
