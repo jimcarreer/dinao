@@ -120,8 +120,8 @@ Contributing
 
 Check out our `code of conduct`_ and `contributing documentation`_.
 
-.. |build-status| image:: https://api.travis-ci.org/jimcarreer/dinao.svg?branch=main
-   :target: https://travis-ci.org/jimcarreer/dinao
+.. |build-status| image:: https://github.com/jimcarreer/dinao/workflows/Build/badge.svg?branch=main
+   :target: https://github.com/jimcarreer/dinao
 .. |cover-status| image:: https://codecov.io/gh/jimcarreer/dinao/branch/main/graph/badge.svg?token=CpJ5u1ngZH
    :target: https://codecov.io/gh/jimcarreer/dinao
 .. |pyver-status| image:: https://img.shields.io/pypi/pyversions/dinao
