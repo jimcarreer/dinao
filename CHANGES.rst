@@ -1,15 +1,13 @@
 Change Log
 ==========
 
-<NEXT VERSION>
---------------
-Place holder for next version.
+1.1.0
+-----
+Release for direct template replacement.
 
 Features
 ########
-
-Bug Fixes
-#########
+* Direct template replacement is now possible.
 
 1.0.2
 -----
