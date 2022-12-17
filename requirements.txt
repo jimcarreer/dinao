@@ -1,4 +1,4 @@
-pyparsing==2.4.7
+pyparsing==3.0.9
 pytest # test
 pytest-cov # test
 psycopg2-binary # test

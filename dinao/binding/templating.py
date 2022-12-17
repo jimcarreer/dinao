@@ -7,7 +7,8 @@ from dinao.binding.errors import TemplateError
 # fmt: off
 from pyparsing import (  # noqa: I101
     alphanums, alphas, printables,
-    Combine, Forward, Group, OneOrMore, Suppress, White, Word, ZeroOrMore, ParseBaseException
+    Combine, Forward, Group, OneOrMore, Suppress, White, Word, ZeroOrMore, ParseBaseException,
+    ParseResults
 )
 # fmt: on
 
@@ -15,12 +16,24 @@ from pyparsing import (  # noqa: I101
 class TemplateParameter:
     """Represents a parameter for prepared statement rendered from a template."""
 
-    def __init__(self, kwarg_path: Tuple[str]):
+    def __init__(self, kwarg_path: Tuple[str], is_replace: bool = False):
         """Construct a template parameter.
 
         :param kwarg_path: an immutable list representing the 'path' of the parameter in a root dictionary of arguments
+        :param is_replace: is this parameter a direct replacement
         """
+        self.is_replace = is_replace
         self.kwarg_path = kwarg_path
+
+
+def set_result_type(subject: str, position: int, result: ParseResults):
+    """For use with forward lookup groups to inject suppressed characters into the parse result.
+
+    :param subject: string being parsed
+    :param position: position in the string the parsing is taking place
+    :param result: the parse result object for the given position / subject
+    """
+    result[0].insert(0, subject[position])
 
 
 class Template:
@@ -29,17 +42,23 @@ class Template:
     # Grammar is based roughly on problem description from
     # https://github.com/pyparsing/pyparsing/issues/5
     # fmt: off
-    OPEN         = Suppress("#{")                                                     # noqa: E221
-    CLOSE        = Suppress("}")                                                      # noqa: E221
-    LONERS       = ((~OPEN + "#") | (~OPEN + "{") | (~OPEN + "}"))                    # noqa: E221
-    IDENTIFIER   = Word(alphas, alphanums + "_")                                      # noqa: E221
-    REPLACEMENT  = (IDENTIFIER + ZeroOrMore(Suppress(".") + IDENTIFIER))              # noqa: E221
-    PLAIN_TEXT   = Word(printables, excludeChars="#{}")                               # noqa: E221
-    NULL_SPACE   = ZeroOrMore(White())                                                # noqa: E221
-    LOOKUP       = Forward()                                                          # noqa: E221
-    SQL_FRAGMENT = Combine(NULL_SPACE + OneOrMore(PLAIN_TEXT | LONERS) + NULL_SPACE)  # noqa: E221
-    LOOKUP      << Group(OPEN + REPLACEMENT + CLOSE)                                  # noqa: E221
-    GRAMMAR      = OneOrMore(NULL_SPACE + LOOKUP + NULL_SPACE | SQL_FRAGMENT)         # noqa: E221
+    OPEN_VAR     = Suppress("#{")                                                           # noqa: E221
+    OPEN_REP     = Suppress("!{")                                                           # noqa: E221
+    OPENS        = (OPEN_VAR | OPEN_REP)                                                    # noqa: E221
+    CLOSE        = Suppress("}")                                                            # noqa: E221
+    LONERS       = ((~OPENS + "#") | (~OPENS + "!") |                                       # noqa: E221
+                    (~OPENS + "{") | (~OPENS + "}"))                                        # noqa: E221
+    IDENTIFIER   = Word(alphas, alphanums + "_")                                            # noqa: E221
+    REPLACEMENT  = (IDENTIFIER + ZeroOrMore(Suppress(".") + IDENTIFIER))                    # noqa: E221
+    PLAIN_TEXT   = Word(printables, excludeChars="#!{}")                                    # noqa: E221
+    NULL_SPACE   = ZeroOrMore(White())                                                      # noqa: E221
+    LOOKUP_VAR   = Forward()                                                                # noqa: E221
+    LOOKUP_REP   = Forward()                                                                # noqa: E221
+    SQL_FRAGMENT = Combine(NULL_SPACE + OneOrMore(PLAIN_TEXT | LONERS) + NULL_SPACE)        # noqa: E221
+    LOOKUP_VAR  << Group(OPEN_VAR + REPLACEMENT + CLOSE).add_parse_action(set_result_type)  # noqa: E221
+    LOOKUP_REP  << Group(OPEN_REP + REPLACEMENT + CLOSE).add_parse_action(set_result_type)  # noqa: E221
+    LOOKUP       = (LOOKUP_VAR | LOOKUP_REP)                                                # noqa: E221
+    GRAMMAR      = OneOrMore(NULL_SPACE + LOOKUP + NULL_SPACE | SQL_FRAGMENT)               # noqa: E221
     # fmt: on
 
     def __init__(self, sql_template: str):
@@ -56,9 +75,10 @@ class Template:
             raise TemplateError(f"{x.msg}:\n{x.line}\n{(' '*(x.col -1 ))}^")
         for node in nodes:
             if not isinstance(node, str):
+                is_replace = node.pop(0) == "!"
                 node = tuple(map(str, node))
                 self._arguments.append(node)
-                self._parsed_template.append(TemplateParameter(node))
+                self._parsed_template.append(TemplateParameter(node, is_replace))
                 continue
             # If the previous element was a string, concat it with the new str node otherwise append it
             previous = self._parsed_template.pop() if self._parsed_template else ""
@@ -97,7 +117,10 @@ class Template:
             if isinstance(frag, TemplateParameter):
                 value = cache.get(frag.kwarg_path) or self._resolve_value(frag.kwarg_path, kwargs)
                 cache[frag.kwarg_path] = value
-                parameters.append(value)
-                frag = mung_symbol
+                if frag.is_replace:
+                    frag = str(value)
+                else:
+                    parameters.append(value)
+                    frag = mung_symbol
             munged += frag
         return munged, tuple(parameters)

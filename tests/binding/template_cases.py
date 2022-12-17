@@ -28,7 +28,7 @@ EMPLOYEE = {
 
 # The ordering of these tuples is:
 # - Template init arguments,
-# - Template's expected arguments property,
+# - Template's expected argument's property,
 # - Keyword arguments to call with template.render(...)
 # - Expected return values from template.render(...)
 GOOD_CASES = (
@@ -37,6 +37,12 @@ GOOD_CASES = (
         (("arg1",), ("arg2",), ("arg3",)),
         {"arg1": 1, "arg2": "test", "arg3": 2.0},
         ("  %s %s %s  ", (1, "test", 2.0)),
+    ),
+    (  # Another valid but kind of dumb test checking direct replacement
+        ("  !{arg1} !{arg2} !{arg3}  ",),
+        (("arg1",), ("arg2",), ("arg3",)),
+        {"arg1": 1, "arg2": "test", "arg3": 2.0},
+        ("  1 test 2.0  ", ()),
     ),
     (  # Basic test case
         ("INSERT INTO my_table (#{my_arg.my_arg_property.another_property}, #{my_other_arg})",),
@@ -83,15 +89,38 @@ GOOD_CASES = (
         (
             "SELECT * FROM table_name WHERE"
             "  some_column = #{argument.member.sub_member} AND "
-            '  json_column @> \'{"some": [{"nested": [{"json_in_sql": "#{another_argument}"}]}]}\' ',
+            '  json_column @> \'{"some": [{"nested": [{"json_in_sql": "#{another_argument}"}]}]}\' '
+            " AND some_column != !{argument.member.sub_member}",
         ),
-        (("argument", "member", "sub_member"), ("another_argument",)),
+        (("argument", "member", "sub_member"), ("another_argument",), ("argument", "member", "sub_member")),
         {"argument": {"member": {"sub_member": "test"}}, "another_argument": "something"},
         (
             "SELECT * FROM table_name WHERE"
             "  some_column = %s AND "
-            '  json_column @> \'{"some": [{"nested": [{"json_in_sql": "%s"}]}]}\' ',
+            '  json_column @> \'{"some": [{"nested": [{"json_in_sql": "%s"}]}]}\' '
+            " AND some_column != test",
             ("test", "something"),
         ),
     ),
+)
+
+# The ordering of these tuples is:
+# - Template init arguments,
+# - Exception message fragement expected
+INVALID_CASES = (
+    (  # Dangling bracket for variable
+        (
+            "INSERT INTO table VALUES (#{myarg1}, #{myarg2})"
+            "  ON CONFLICT DO UPDATE"
+            "SET mycol1 = #{myarg1"
+            "WHERE mycol2 = #{marg2}",
+        ),
+        "SET mycol1 = #{myarg1",
+    ),
+    (("INSERT INTO TABLE !{}",), "!{}"),  # Empty replacement case 1
+    (("INSERT INTO TABLE #{}",), "#{}"),  # Empty replacement case 2
+    (("INSERT INTO table VALUES (#{!{marg3}})",), "#{!{marg3}}"),  # Nested template replacements case 1
+    (("INSERT INTO table VALUES (!{!{marg3}})",), "!{!{marg3}}"),  # Nested template replacements case 2
+    (("INSERT INTO table VALUES (!{#{marg3}})",), "!{#{marg3}}"),  # Nested template replacements case 3
+    (("INSERT INTO table VALUES (#{#{marg3}})",), "#{#{marg3}}"),  # Nested template replacements case 4
 )
