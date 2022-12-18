@@ -87,7 +87,7 @@ class Connection(ABC):
 
     @property
     def autocommit(self):
-        """Whether or not commit is called after every call to query(...) and execute(...)."""
+        """Whether commit is called after every call to query(...) and execute(...)."""
         return self._auto_commit
 
     @autocommit.setter

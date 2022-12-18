@@ -54,7 +54,7 @@ Basic Example
 
 DINAO focuses binding functions to scoped connections / transactions against
 the database and using function signatures and type hinting to infer mapping
-and query parametrization.
+and query parameterization.
 
 Below shows a simple example of DINAO usage. For more comprehensive usage and
 feature showcase see `examples`_.
@@ -93,8 +93,18 @@ feature showcase see `examples`_.
         pass
 
 
-    @binder.query("SELECT name, value FROM my_table WHERE my_table.name LIKE #{search_term}")
-    def search(search_term: str) -> List[MyModel]:
+    # This is an example of a query where a template variable is directly
+    # replaced in a template.  This is via a template argument denoted with
+    # !{column_name}.  The #{search_term} on the other hand uses proper
+    # escaping and parameterization in the underlying SQL engine.
+    #
+    # IMPORTANT: This is a vector for SQL Injection, do not use direct template
+    #            replacement on untrusted inputs, especially those coming from
+    #            users.  Ensure that you validate, restrict, or otherwise limit
+    #            the values that can be used in direct template replacement.
+    #
+    @binder.query("SELECT name, value FROM my_table WHERE !{column_name} LIKE #{search_term}")
+    def search(column_name: str, search_term: str) -> List[MyModel]:
         pass
 
 
@@ -120,6 +130,23 @@ Contributing
 
 Check out our `code of conduct`_ and `contributing documentation`_.
 
+Release Process
+---------------
+
+This library adheres too `semantic versioning 2.0.0`_ standards, in general
+that means, given a version number MAJOR.MINOR.PATCH, increment:
+
+ 1. MAJOR version when you make incompatible API changes
+ 2. MINOR version when you add functionality in a backwards compatible manner
+ 3. PATCH version when you make backwards compatible bug fixes
+
+Changes for the next version should be accumulated on the main branch until
+such time that there is enough confidence in the build that it can be released.
+When this is done, a repository administrator opens a PR to bump the version in
+`__version__.py` updates the change logs, merges this PR then tags the merge
+with the release version.  Only tagged commits of main are built and published.
+
+
 .. |build-status| image:: https://github.com/jimcarreer/dinao/workflows/Build/badge.svg?branch=main
    :target: https://github.com/jimcarreer/dinao
 .. |cover-status| image:: https://codecov.io/gh/jimcarreer/dinao/branch/main/graph/badge.svg?token=CpJ5u1ngZH
@@ -137,3 +164,4 @@ Check out our `code of conduct`_ and `contributing documentation`_.
 .. _examples: examples/
 .. _code of conduct: CODE_OF_CONDUCT.rst
 .. _contributing documentation: CONTRIBUTING.rst
+.. _semantic versioning 2.0.0: https://semver.org/spec/v2.0.0.html

@@ -14,7 +14,7 @@ You simply need to run:
 .. code-block::
 
     $ ./build.sh
-    $ docker-compose up
+    $ docker compose up
     $ pip install requests
     $ python3 tester.py
 

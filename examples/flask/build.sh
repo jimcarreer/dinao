@@ -14,4 +14,4 @@ rm -rf  ${TEMP_DIR}; mkdir ${TEMP_DIR}
 cp -r ${SRC_PATH}/dinao ${TEMP_DIR}/dinao
 cp ${CP_FILES} ${TEMP_DIR}
 
-docker-compose build
+docker compose build
