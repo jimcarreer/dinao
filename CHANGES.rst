@@ -1,6 +1,16 @@
 Change Log
 ==========
 
+<NEXT VERSION>
+--------------
+Place holder for next version.
+
+Features
+########
+
+Bug Fixes
+#########
+
 1.1.0
 -----
 Release for direct template replacement.
