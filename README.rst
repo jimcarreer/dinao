@@ -5,14 +5,14 @@ DINAO Is Not An ORM
 Introduction
 ------------
 
-What is DINAO? Well it might be easier to tell you what its not.  DINAO Is Not
+What is DINAO? Well, it might be easier to tell you what it's not.  DINAO Is Not
 An ORM.  If you want an ORM, `SQLAlchemy`_ is absolutely the best python has to
 offer.
 
 Target Audience
 ***************
 
-Do you like writing SQL? Do you hate all the boiler plate involved with setting
+Do you like writing SQL? Do you hate all the boilerplate involved with setting
 up connections and cursors then cleaning them up?  Would you just like
 something simple that executes a query and can map the results to simple data
 classes?  Then DINAO is for you!
@@ -21,7 +21,7 @@ Influences and Guiding Principles
 *********************************
 
 The APIs implemented mirror libraries I've used in other ecosystems.
-Specifically you may notice similarities to the JDBI Declarative API or the
+Specifically, you may notice similarities to the JDBI Declarative API or the
 MyBatis interface mappers.  This is because I very much *like* this approach.
 You're the developer, I'm just here to reduce the number of lines of code you
 have to write to meet your goal.  At the end of the day you know your schema
