@@ -11,6 +11,10 @@ Features
 Bug Fixes
 #########
 
+1.1.1
+-----
+Minor documentation updates, add coverage / testing on 3.11.
+
 1.1.0
 -----
 Release for direct template replacement.
