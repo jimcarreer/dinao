@@ -36,7 +36,7 @@ setup(
     test_suite="tests",
     install_requires=install_requires,
     tests_require=tests_require,
-    python_requires=">=3.8.0, <3.11",
+    python_requires=">=3.8.0, <3.12",
     extras_require={"tests": tests_require},
     classifiers=[
         "Topic :: Database",
@@ -44,5 +44,6 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
 )

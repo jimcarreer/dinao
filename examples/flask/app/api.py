@@ -58,7 +58,7 @@ def listing():
         return make_error("Bad page number")
     if limit < 1:
         return make_error("Bad page size")
-    res = dbi.search(term, {"offset": (page * limit), "limit": limit})
+    res = dbi.search("name", term, {"offset": (page * limit), "limit": limit})
     res = jsonify({"results": list(res)})
     return res, 200
 
