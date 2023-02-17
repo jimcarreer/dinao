@@ -5,7 +5,16 @@ services:
   postgres:
     image: postgres:11.4-alpine
     environment:
-      POSTGRES_USER: test_user
-      POSTGRES_PASSWORD: test_pass
+      POSTGRES_USER: psql_test_user
+      POSTGRES_PASSWORD: psql_test_pass
     ports:
-      - "5432:5432"
+      - "15432:5432"
+
+  mariadb:
+    image: mariadb:latest
+    environment:
+      MARIADB_ROOT_PASSWORD: maria_test_root_pass
+      MARIADB_USER: maria_test_user
+      MARIADB_PASSWORD: maria_test_pass
+    ports:
+      - "13306:3306"

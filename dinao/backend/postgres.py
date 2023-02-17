@@ -50,8 +50,10 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPool):
         if not dbname:
             raise ConfigurationError("Database name is required but missing")
         schema = ",".join(self._get_arg("schema", list, ["public"]))
-        max_c = self._get_arg("pool_max_conn", int, 1)
         min_c = self._get_arg("pool_min_conn", int, 1)
+        max_c = self._get_arg("pool_max_conn", int, min_c)
+        if min_c <= 0 or max_c <= 0:
+            raise ConfigurationError("The pool_max_conn and pool_min_conn must be greater than 0")
         if max_c < min_c:
             raise ConfigurationError("The argument pool_max_conn must be greater or equal to pool_min_conn")
         return {

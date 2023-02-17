@@ -31,6 +31,10 @@ jobs:
         python: ["3.8", "3.9", "3.10", "3.11"]
     steps:
       - uses: actions/checkout@v2
+      - name: Install Binary Packages
+        run: |
+          sudo apt-get install libmariadb3 libmariadb-dev
+          sudo apt-get install python3-dev
       - name: Start Docker Compose
         run: |
           docker-compose up -d

@@ -60,7 +60,7 @@ class ResultSet:
         :returns: a tuple of ColumnDescriptors
         """
         if not self._description:
-            self._description = tuple([ColumnDescriptor(*d) for d in self._cursor.description])
+            self._description = tuple([ColumnDescriptor(*(d[0:7])) for d in self._cursor.description])
         return self._description
 
     @property
@@ -153,7 +153,7 @@ class ConnectionPool(ABC):
         self.logger = logging.getLogger(__name__)
         self._raw_db_url = db_url
         self._db_url = urlparse(self._raw_db_url)
-        self._args = parse_qs(self._db_url.query)
+        self._args = parse_qs(self._db_url.query, keep_blank_values=True)
 
     @staticmethod
     def _strict_bool(value: str):
@@ -173,11 +173,10 @@ class ConnectionPool(ABC):
         caster = expected_type if expected_type is not bool else self._strict_bool
         try:
             if caster != list:
-                assert len(self._args.get(name)) == 1
+                if len(self._args.get(name)) != 1:
+                    raise ConfigurationError(f"Invalid argument '{name}': only a single value must be specified")
                 return caster(self._args.pop(name)[0])
             return self._args.pop(name)
-        except AssertionError as x:
-            raise ConfigurationError(f"Invalid argument '{name}': only a single value must be specified") from x
         except ValueError as x:
             raise ConfigurationError(f"Invalid argument '{name}': must be {expected_type.__name__}") from x
 
