@@ -16,6 +16,8 @@ import pytest
         ("postgresql://user:pass@host:4444/dbname?pool_max_conn=ABC", "must be int", ConfigurationError),
         ("postgresql://user:pass@host:4444/dbname?pool_min_conn=ABC", "must be int", ConfigurationError),
         ("postgresql://user:pass@host:4444/dbname?pool_threaded=ABC", "must be bool", ConfigurationError),
+        ("postgresql://user:pass@host:4444/dbname?pool_min_conn=-1", "must be greater than 0", ConfigurationError),
+        ("postgresql://user:pass@host:4444/dbname?pool_max_conn=0", "must be greater than 0", ConfigurationError),
         ("postgresql://user:pass@host:4444/dbname?weird=XYZ", "Unexpected argument", ConfigurationError),
         (
             "postgresql://user:pass@host:4444/dbname?weird=XYZ&schema=s1&schema=s2&schema=s3",
@@ -39,6 +41,9 @@ import pytest
         ),
         ("sqlite3+invalid://test.db", "not supported", UnsupportedBackendError),
         ("sqlite3://test.db?schema=test", "Unexpected argument", ConfigurationError),
+        ("mariadb://user:pass@host:4444/", "name is required but missing", ConfigurationError),
+        ("mariadb://user:pass@host:4444/dbname?pool_size=-1", "must be greater than 0", ConfigurationError),
+        ("mariadb://user:pass@host:4444/dbname?pool_name=", "cannot be an empty string", ConfigurationError),
     ],
 )
 def test_backend_create_rejection(db_uri: str, match: str, except_class):
