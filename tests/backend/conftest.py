@@ -52,7 +52,10 @@ def tmp_maria_db_url(rand_db_name) -> str:
     yield f"mariadb://{username}:{password}@{hostname}:{port}/{rand_db_name}"
     cursor.execute(f"{test_sql.TERMINATE_DB_CONNS} WHERE db = '{rand_db_name}'")
     for row in cursor:
-        cursor.execute(row[0])
+        try:
+            cursor.execute(row[0])
+        except mariadb.OperationalError as e:
+            print(f"Ignoring operational error when killing connections: {e}")
     cursor.execute(f"DROP DATABASE {rand_db_name}")
     cursor.close()
     cnx.close()
