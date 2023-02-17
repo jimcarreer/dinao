@@ -51,7 +51,7 @@ def tmp_maria_db_url(rand_db_name) -> str:
     cursor.execute(f"GRANT ALL PRIVILEGES ON {rand_db_name}.* TO {username}")
     yield f"mariadb://{username}:{password}@{hostname}:{port}/{rand_db_name}"
     cursor.execute(f"{test_sql.TERMINATE_DB_CONNS} WHERE db = '{rand_db_name}'")
-    for row in cursor:
+    for row in cursor:  # pragma: no cover
         try:
             cursor.execute(row[0])
         except mariadb.OperationalError as e:
