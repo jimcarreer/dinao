@@ -6,14 +6,14 @@ from dinao.backend.errors import BackendNotInstalledError, ConfigurationError
 
 
 class ConnectionMariaDB(Connection):
-    """Implementation of Connection for Psycopg2."""
+    """Implementation of Connection for MariaDB Connector."""
 
     def _execute(self, cursor, sql: str, params: tuple = None):
         cursor.execute(sql, params)
 
 
 class ConnectionPoolMariaDB(ConnectionPool):
-    """Implementation of ConnectionPool for MariaDB."""
+    """Implementation of ConnectionPool for MariaDB Connector."""
 
     def __init__(self, db_url: str):
         """Construct a connection pool for the given connection URL.
@@ -36,12 +36,12 @@ class ConnectionPoolMariaDB(ConnectionPool):
         except ModuleNotFoundError:  # pragma: no cover
             issue = "Module mariadb not installed, cannot create connection pool"
             raise BackendNotInstalledError(issue)
-        self._pool_kwargs = self._make_pool_kwargs()
+        self._pool_kwargs = self._make_cnx_kwargs()
         self._raise_for_unexpected_args()
         self._pool = ConnectionPool(**self._pool_kwargs)
         self._closed = False
 
-    def _make_pool_kwargs(self) -> dict:
+    def _make_cnx_kwargs(self) -> dict:
         dbname = self._db_url.path.strip("/")
         if not dbname:
             raise ConfigurationError("Database name is required but missing")
