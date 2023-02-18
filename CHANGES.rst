@@ -11,6 +11,21 @@ Features
 Bug Fixes
 #########
 
+1.2.0
+-----
+Small fixes, mariadb support via maria db connector
+
+Features
+########
+* Maria DB support
+
+Bug Fixes
+#########
+* Assertion no longer used in 'production code'
+* Empty query string arguments in database connection strings now retained
+* Postgres minimum and maximum connections for pool no longer allowed to be
+  negative
+
 1.1.1
 -----
 Minor documentation updates, add coverage / testing on 3.11.
