@@ -95,6 +95,9 @@ sigterm
 socio
 sql
 sqlite
+ssl
+sslmode
+sslrootcert
 staticmethod
 str
 templated
