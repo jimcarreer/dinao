@@ -39,15 +39,13 @@ jobs:
       - name: Start Docker Compose
         run: |
           sudo chmod 0600 ./vols/tls/server.key
-          sudo chown root:root ./vols/tls/server.crt
-          sudo chown root:root ./vols/tls/server.key
+          sudo chmod 0600 ./vols/tls/server.crt
           docker-compose up -d
           docker ps
           echo "Sleeping to let containers come up"
           sleep 30
           docker ps
           docker compose logs postgres
-          docker compose exec postgres ls -alh /var/lib/postgresql/server.key
       - name: Setup Python ${{matrix.python}}
         uses: actions/setup-python@v2
         with:
