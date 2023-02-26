@@ -38,6 +38,8 @@ jobs:
           sudo apt-get install python3-dev
       - name: Start Docker Compose
         run: |
+          sudo chmod 0600 ./vols/tls/server.crt
+          sudo chmod 0600 ./vols/tls/server.key
           sudo chown root:root ./vols/tls/server.crt
           sudo chown root:root ./vols/tls/server.key
           docker-compose up -d
