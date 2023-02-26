@@ -38,11 +38,14 @@ jobs:
           sudo apt-get install python3-dev
       - name: Start Docker Compose
         run: |
+          sudo chown root:root ./tls/vols/server.key
           docker-compose up -d
           echo "Sleeping to let containers come up"
-          docker compose logs postgres
-          docker compose exec postgres cat /var/lib/postgresql/server.crt
+          sleep 10
           docker ps
+          docker compose logs postgres
+          docker compose logs mariadb
+          docker compose exec postgres cat /var/lib/postgresql/server.crt
       - name: Setup Python ${{matrix.python}}
         uses: actions/setup-python@v2
         with:
