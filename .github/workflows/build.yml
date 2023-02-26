@@ -38,7 +38,7 @@ jobs:
           sudo apt-get install python3-dev
       - name: Start Docker Compose
         run: |
-          sudo chown root:root ./tls/vols/server.key
+          sudo chown root:root ./vols/tls/server.key
           docker-compose up -d
           echo "Sleeping to let containers come up"
           sleep 10
