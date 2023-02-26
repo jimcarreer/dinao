@@ -44,7 +44,8 @@ jobs:
           sleep 10
           docker ps
           docker compose exec postgres ls -alh /var/lib/postgresql/server.key
-          docker compose exec ps aus
+          docker compose exec postgres ps aus
+          exit 1
       - name: Setup Python ${{matrix.python}}
         uses: actions/setup-python@v2
         with:
