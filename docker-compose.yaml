@@ -3,11 +3,11 @@ version: "3.7"
 services:
 
   postgres:
-    image: postgres:alpine
-    #command: >
-    #  -c ssl=on
-    #  -c ssl_cert_file=/var/lib/postgresql/server.crt
-    #  -c ssl_key_file=/var/lib/postgresql/server.key
+    image: postgres:latest
+    command: >
+      -c ssl=on
+      -c ssl_cert_file=/var/lib/postgresql/server.crt
+      -c ssl_key_file=/var/lib/postgresql/server.key
     environment:
       POSTGRES_USER: psql_test_user
       POSTGRES_PASSWORD: psql_test_pass
