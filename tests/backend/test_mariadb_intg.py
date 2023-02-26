@@ -1,6 +1,7 @@
 """Basic test of the mariadb implementation of the primitive database interfaces."""
 
 import uuid
+from pathlib import Path
 
 from dinao.backend import create_connection_pool
 from dinao.backend.base import ResultSet
@@ -9,10 +10,19 @@ import pytest
 
 from tests.backend import mariadb_test_sql as test_sql
 
+CA_PATH = Path("./vols/tls/ca.crt").absolute()
+
 
 @pytest.mark.parametrize(
     "extra_args",
-    ["", "pool_size=10", "pool_name=test-pool-name"],
+    [
+        "",
+        "pool_size=10",
+        "pool_name=test-pool-name",
+        "ssl=True",
+        "ssl=False",
+        f"ssl=True&ssl_ca={CA_PATH}&ssl_verify_cert=True",
+    ],
 )
 def test_backend_impls(tmp_maria_db_url: str, extra_args: str):
     """Tests the basic backend implementations for postgres."""

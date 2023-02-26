@@ -33,12 +33,16 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install Binary Packages
         run: |
+          sudo apt-get update
           sudo apt-get install libmariadb3 libmariadb-dev
           sudo apt-get install python3-dev
       - name: Start Docker Compose
         run: |
-          docker-compose up -d
-          docker ps
+          sudo chown 999:999 ./vols/tls/server.key
+          sudo chown 999:999 ./vols/tls/server.crt
+          sudo chmod 400 ./vols/tls/server.key
+          sudo chmod 400 ./vols/tls/server.crt
+          docker compose up -d
           echo "Sleeping to let containers come up"
           sleep 30
           docker ps

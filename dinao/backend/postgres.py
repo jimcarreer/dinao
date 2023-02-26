@@ -27,6 +27,8 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPool):
             * pool_min_conn, an integer specifying the minimum connections to keep in the pool, defaults to 1
             * pool_max_conn, an integer specifying the maximum connections to keep in the pool, defaults to 1
             * pool_threaded, a boolean specifying a threaded pool should be used, defaults to False
+            * sslmode, a string ("prefer", "verify-full", etc ...) specifying ssl mode for connections, defaults to None
+            * sslrootcert, a string specifying a path to a root CA to use for ssl verification, defaults to None
 
         :param db_url: a url with the described format
         :raises: ConfigurationError, BackendNotInstalledError
@@ -56,7 +58,9 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPool):
             raise ConfigurationError("The pool_max_conn and pool_min_conn must be greater than 0")
         if max_c < min_c:
             raise ConfigurationError("The argument pool_max_conn must be greater or equal to pool_min_conn")
-        return {
+        ssl_mode = self._get_arg("sslmode", str, None)
+        ssl_root_cert = self._get_arg("sslrootcert", str, None)
+        kwargs = {
             "maxconn": max_c,
             "minconn": min_c,
             "dbname": dbname,
@@ -66,6 +70,11 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPool):
             "port": self._db_url.port,
             "options": f"-c search_path={schema}",
         }
+        if ssl_mode:
+            kwargs["sslmode"] = ssl_mode
+        if ssl_root_cert:
+            kwargs["sslrootcert"] = ssl_root_cert
+        return kwargs
 
     def lease(self) -> Connection:  # noqa: D102
         inner_cnx = self._pool.getconn()

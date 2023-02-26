@@ -1,0 +1,3 @@
+[server]
+ssl-cert = /certs/server.crt
+ssl-key = /certs/server.key

@@ -19,7 +19,7 @@ def tmp_psql_db_url(rand_db_name) -> str:
     from tests.backend import postgres_test_sql as test_sql
 
     database = os.environ.get("DINAO_TEST_PSQL_DB", "postgres")
-    hostname = os.environ.get("DINAO_TEST_PSQL_HOST", "localhost")
+    hostname = os.environ.get("DINAO_TEST_PSQL_HOST", "127.0.0.1")
     username = os.environ.get("DINAO_TEST_PSQL_USER", "psql_test_user")
     password = os.environ.get("DINAO_TEST_PSQL_PASS", "psql_test_pass")
     port = int(os.getenv("DINAO_TEST_PSQL_PORT", 15432))
@@ -49,7 +49,7 @@ def tmp_maria_db_url(rand_db_name) -> str:
     cursor = cnx.cursor()
     cursor.execute(f"CREATE DATABASE {rand_db_name}")
     cursor.execute(f"GRANT ALL PRIVILEGES ON {rand_db_name}.* TO {username}")
-    yield f"mariadb://{username}:{password}@{hostname}:{port}/{rand_db_name}"
+    yield f"mariadb+mariadbconnector://{username}:{password}@{hostname}:{port}/{rand_db_name}"
     cursor.execute(f"{test_sql.TERMINATE_DB_CONNS} WHERE db = '{rand_db_name}'")
     rows = cursor.fetchall() if cursor.field_count else []
     for row in rows:  # pragma: no cover
