@@ -33,6 +33,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install Binary Packages
         run: |
+          sudo apt-get update
           sudo apt-get install libmariadb3 libmariadb-dev
           sudo apt-get install python3-dev
       - name: Start Docker Compose
