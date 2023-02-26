@@ -45,6 +45,7 @@ jobs:
           echo "Sleeping to let containers come up"
           sleep 30
           docker ps
+          docker compose exec postgres ls -alh /var/lib/postgresql/server.key
       - name: Setup Python ${{matrix.python}}
         uses: actions/setup-python@v2
         with:
