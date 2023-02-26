@@ -4,10 +4,11 @@ services:
 
   postgres:
     image: postgres:latest
-    #command: >
-    #  -c ssl=on
-    #  -c ssl_cert_file=/var/lib/postgresql/server.crt
-    #  -c ssl_key_file=/var/lib/postgresql/server.key
+    user: root
+    command: >
+      -c ssl=on
+      -c ssl_cert_file=/var/lib/postgresql/server.crt
+      -c ssl_key_file=/var/lib/postgresql/server.key
     environment:
       POSTGRES_USER: psql_test_user
       POSTGRES_PASSWORD: psql_test_pass
@@ -19,6 +20,7 @@ services:
 
   mariadb:
     image: mariadb:latest
+    user: root
     environment:
       MARIADB_ROOT_PASSWORD: maria_test_root_pass
       MARIADB_USER: maria_test_user
