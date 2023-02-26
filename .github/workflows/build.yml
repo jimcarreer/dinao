@@ -43,9 +43,8 @@ jobs:
           echo "Sleeping to let containers come up"
           sleep 10
           docker ps
-          docker compose logs postgres
-          docker compose logs mariadb
-          docker compose exec postgres cat /var/lib/postgresql/server.crt
+          docker compose exec postgres ls -alh /var/lib/postgresql/server.key
+          docker compose exec ps aus
       - name: Setup Python ${{matrix.python}}
         uses: actions/setup-python@v2
         with:
