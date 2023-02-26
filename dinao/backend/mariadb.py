@@ -26,6 +26,9 @@ class ConnectionPoolMariaDB(ConnectionPool):
 
             * pool_name, a string specifying a unique name for the pool, defaults to a random string
             * pool_size, an integer specifying the size of the pool, defaults to 5
+            * ssl, a boolean specifying that the connection must use encryption, defaults to None
+            * ssl_ca, an absolute path to a certificate to verify the server with, defaults to None
+            * ssl_verify_cert, a boolean specifying that the server's cert must be verified, defaults to None
 
         :param db_url: a url with the described format
         :raises: ConfigurationError, BackendNotInstalledError
@@ -51,7 +54,7 @@ class ConnectionPoolMariaDB(ConnectionPool):
         pool_size = self._get_arg("pool_size", int, 5)
         if pool_size <= 0:
             raise ConfigurationError("The value for pool_size must be greater than 0")
-        return {
+        kwargs = {
             "database": dbname,
             "pool_name": pool_name,
             "pool_size": pool_size,
@@ -60,6 +63,16 @@ class ConnectionPoolMariaDB(ConnectionPool):
             "host": self._db_url.hostname,
             "port": self._db_url.port,
         }
+        ssl_ca = self._get_arg("ssl_ca", str, None)
+        ssl_verify_cert = self._get_arg("ssl_verify_cert", bool, None)
+        ssl = self._get_arg("ssl", bool, None)
+        if ssl_ca is not None:
+            kwargs["ssl_ca"] = ssl_ca
+        if ssl_verify_cert is not None:
+            kwargs["ssl_verify_cert"] = ssl_verify_cert
+        if ssl is not None:
+            kwargs["ssl"] = ssl
+        return kwargs
 
     def lease(self) -> Connection:  # noqa: D102
         inner_cnx = self._pool.get_connection()
