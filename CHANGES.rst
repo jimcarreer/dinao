@@ -13,7 +13,7 @@ Bug Fixes
 
 1.3.0
 -----
-Small fixes, mariadb support via maria db connector
+TLS support for current backends
 
 Features
 ########
