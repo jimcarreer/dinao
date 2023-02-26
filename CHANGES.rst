@@ -11,6 +11,15 @@ Features
 Bug Fixes
 #########
 
+1.3.0
+-----
+Small fixes, mariadb support via maria db connector
+
+Features
+########
+* Basic TLS support for Maria DB connection pools
+* Basic TLS support for Postgres connection pools
+
 1.2.0
 -----
 Small fixes, mariadb support via maria db connector
