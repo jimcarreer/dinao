@@ -17,3 +17,9 @@ class BackendNotInstalledError(Exception):
     """Raised when a backend engine is not installed."""
 
     pass
+
+
+class ConnectionPoolClosed(Exception):
+    """Raised when a connection pool is closed."""
+
+    pass

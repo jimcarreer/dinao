@@ -61,6 +61,8 @@ mariadbconnector
 maxconn
 minconn
 msg
+mysql
+mysqlconnector
 noqa
 ns
 num

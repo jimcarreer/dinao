@@ -63,6 +63,34 @@ def tmp_maria_db_url(rand_db_name) -> str:
 
 
 @pytest.fixture()
+def tmp_mysql_db_url(rand_db_name) -> str:
+    """Provide a DB Connection Pool URL for the test mariadb instance."""
+    import mariadb
+    from tests.backend import mariadb_test_sql as test_sql
+
+    hostname = os.environ.get("DINAO_TEST_MYSQL_HOST", "127.0.0.1")
+    password = os.environ.get("DINAO_TEST_MYSQL_PASS", "mysql_test_pass")
+    username = os.environ.get("DINAO_TEST_MYSQL_USER", "mysql_test_user")
+    root_password = os.environ.get("DINAO_TEST_MYSQL_ROOT_PASS", "mysql_test_root_pass")
+    port = int(os.getenv("DINAO_TEST_MYSQL_PORT", 23306))
+    cnx = mariadb.connect(user="root", password=root_password, host=hostname, port=port)
+    cursor = cnx.cursor()
+    cursor.execute(f"CREATE DATABASE {rand_db_name}")
+    cursor.execute(f"GRANT ALL PRIVILEGES ON {rand_db_name}.* TO {username}")
+    yield f"mysql+mysqlconnector://{username}:{password}@{hostname}:{port}/{rand_db_name}"
+    cursor.execute(f"{test_sql.TERMINATE_DB_CONNS} WHERE db = '{rand_db_name}'")
+    rows = cursor.fetchall() if cursor.field_count else []
+    for row in rows:  # pragma: no cover
+        try:
+            cursor.execute(row[0])
+        except mariadb.OperationalError as e:
+            print(f"Ignoring operational error when killing connections: {e}")
+    cursor.execute(f"DROP DATABASE {rand_db_name}")
+    cursor.close()
+    cnx.close()
+
+
+@pytest.fixture()
 def tmp_sqlite3_db_url(tmpdir, rand_db_name) -> str:
     """Provide a DB Connection Pool URL for the test sqlite instance."""
     yield f"sqlite3://{tmpdir}/{rand_db_name}"
