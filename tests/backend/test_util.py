@@ -44,6 +44,9 @@ import pytest
         ("mariadb://user:pass@host:4444/", "name is required but missing", ConfigurationError),
         ("mariadb://user:pass@host:4444/dbname?pool_size=-1", "must be greater than 0", ConfigurationError),
         ("mariadb://user:pass@host:4444/dbname?pool_name=", "cannot be an empty string", ConfigurationError),
+        ("mysql://user:pass@host:4444/", "name is required but missing", ConfigurationError),
+        ("mysql://user:pass@host:4444/dbname?pool_size=-1", "must be greater than 0", ConfigurationError),
+        ("mysql://user:pass@host:4444/dbname?pool_name=", "cannot be an empty string", ConfigurationError),
     ],
 )
 def test_backend_create_rejection(db_uri: str, match: str, except_class):

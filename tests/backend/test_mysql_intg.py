@@ -6,6 +6,7 @@ from dinao.backend.base import ResultSet
 
 import pytest
 
+from dinao.backend.errors import ConnectionPoolClosed
 from tests.backend import mysql_test_sql as test_sql
 
 CA_PATH = Path("./vols/tls/ca.crt").absolute()
@@ -37,3 +38,11 @@ def test_backend_impls(tmp_mysql_db_url: str, extra_args: str):
         assert 2 == len(res.fetchall())
     cnx_pool.release(cnx)
     cnx_pool.dispose()
+
+
+def test_exceptions(tmp_mysql_db_url: str):
+    """Tests a closed pool complains about being closed."""
+    cnx_pool = create_connection_pool(tmp_mysql_db_url)
+    cnx_pool.dispose()
+    with pytest.raises(ConnectionPoolClosed):
+        cnx_pool.lease()
