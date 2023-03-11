@@ -3,10 +3,10 @@ from pathlib import Path
 
 from dinao.backend import create_connection_pool
 from dinao.backend.base import ResultSet
+from dinao.backend.errors import ConnectionPoolClosed
 
 import pytest
 
-from dinao.backend.errors import ConnectionPoolClosed
 from tests.backend import mysql_test_sql as test_sql
 
 CA_PATH = Path("./vols/tls/ca.crt").absolute()
