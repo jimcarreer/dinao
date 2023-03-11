@@ -5,11 +5,12 @@ from urllib.parse import urlparse
 from dinao.backend.base import Connection, ConnectionPool, ResultSet
 from dinao.backend.errors import ConfigurationError, UnsupportedBackendError
 from dinao.backend.mariadb import ConnectionPoolMariaDB
+from dinao.backend.mysql import ConnectionPoolMySQL
 from dinao.backend.postgres import ConnectionPoolPSQLPsycopg2
 from dinao.backend.sqlite import ConnectionPoolSQLite3
 
 
-ENGINE_DEFAULTS = {"postgresql": "psycopg2", "sqlite3": None, "mariadb": "mariadbconnector"}
+ENGINE_DEFAULTS = {"postgresql": "psycopg2", "sqlite3": None, "mariadb": "mariadbconnector", "mysql": "mysqlconnector"}
 
 
 def create_connection_pool(db_url: str) -> ConnectionPool:
@@ -37,6 +38,8 @@ def create_connection_pool(db_url: str) -> ConnectionPool:
         return ConnectionPoolSQLite3(db_url)
     if backend == "mariadb" and engine == "mariadbconnector":
         return ConnectionPoolMariaDB(db_url)
+    if backend == "mysql" and engine == "mysqlconnector":
+        return ConnectionPoolMySQL(db_url)
     raise UnsupportedBackendError(f"The backend+engine '{parsed_url.scheme}' is not supported")
 
 

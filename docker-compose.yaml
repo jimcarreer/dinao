@@ -17,6 +17,19 @@ services:
     ports:
       - "15432:5432"
 
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql_test_root_pass
+      MYSQL_USER: mysql_test_user
+      MYSQL_PASSWORD: mysql_test_pass
+    volumes:
+      - ./vols/mariadb/99-ssl.cnf:/etc/mysql/conf.d/99-ssl.cnf
+      - ./vols/tls/server.crt:/certs/server.crt
+      - ./vols/tls/server.key:/certs/server.key
+    ports:
+      - "23306:3306"
+
   mariadb:
     image: mariadb:latest
     environment:

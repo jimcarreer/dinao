@@ -3,3 +3,4 @@ pytest # test
 pytest-cov # test
 psycopg2-binary # test
 mariadb # test
+mysql-connector-python # test
