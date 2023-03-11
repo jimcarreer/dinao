@@ -81,7 +81,6 @@ class ConnectionPoolMySQL(ConnectionPool):
         }
         ssl_ca = self._get_arg("ssl_ca", str, None)
         ssl_verify_cert = self._get_arg("ssl_verify_cert", bool, None)
-        ssl = self._get_arg("ssl", bool, None)
         if ssl_ca is not None:
             kwargs["ssl_ca"] = ssl_ca
         if ssl_verify_cert is not None:

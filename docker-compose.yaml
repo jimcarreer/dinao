@@ -24,7 +24,7 @@ services:
       MYSQL_USER: mysql_test_user
       MYSQL_PASSWORD: mysql_test_pass
     volumes:
-      - ./vols/mariadb/99-ssl.cnf:/etc/mysql/mariadb.conf.d/99-ssl.cnf
+      - ./vols/mariadb/99-ssl.cnf:/etc/mysql/conf.d/99-ssl.cnf
       - ./vols/tls/server.crt:/certs/server.crt
       - ./vols/tls/server.key:/certs/server.key
     ports:
