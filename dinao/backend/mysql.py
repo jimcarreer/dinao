@@ -3,7 +3,7 @@ import uuid
 from contextlib import contextmanager
 
 from dinao.backend.base import Connection, ConnectionPool, ResultSet
-from dinao.backend.errors import BackendNotInstalledError, ConnectionPoolClosed, ConfigurationError
+from dinao.backend.errors import BackendNotInstalledError, ConfigurationError, ConnectionPoolClosed
 
 
 class ConnectionMySQL(Connection):
