@@ -11,6 +11,14 @@ Features
 Bug Fixes
 #########
 
+1.4.0
+-----
+Support for MySQL
+
+Features
+########
+* MySQL DB Support
+
 1.3.0
 -----
 TLS support for current backends
