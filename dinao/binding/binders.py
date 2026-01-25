@@ -2,6 +2,7 @@
 
 import inspect
 import threading
+import types
 import typing
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
@@ -20,6 +21,25 @@ from dinao.binding.errors import (
 )
 from dinao.binding.mappers import DICT_GENERICS, GENERATOR_GENERICS, LIST_GENERICS, RowMapper, get_row_mapper
 from dinao.binding.templating import Template
+
+
+def _unwrap_optional(type_hint: typing.Any) -> typing.Optional[typing.Type]:
+    """Extract the inner type from Optional[X] or X | None.
+
+    :param type_hint: A type hint that may be Optional[X] or X | None
+    :returns: The inner type X if type_hint is Optional[X], None otherwise
+    """
+    origin = typing.get_origin(type_hint)
+    args = typing.get_args(type_hint)
+    # Check for Union types (typing.Union or types.UnionType for X | Y syntax)
+    if origin not in (typing.Union, types.UnionType) or not args:
+        return None
+    # Filter out NoneType from the union args
+    non_none_args = [a for a in args if a is not type(None)]
+    # Only unwrap if there's exactly one non-None type (true Optional)
+    if len(non_none_args) == 1:
+        return non_none_args[0]
+    return None
 
 
 class FunctionBinder:
@@ -259,6 +279,12 @@ class BoundedQuery(BoundedSQLFunction):
         # Default (a.k.a Signature.empty) if no return type given is List[tuple]
         if return_type == inspect.Signature.empty:
             return_type = typing.List[tuple]
+
+        # Handle Optional[X] / X | None by unwrapping to X
+        # The _one_return impl already handles None when no row is found
+        unwrapped = _unwrap_optional(return_type)
+        if unwrapped is not None:
+            return_type = unwrapped
 
         generic_type = typing.get_origin(return_type)
         generic_args = typing.get_args(return_type)

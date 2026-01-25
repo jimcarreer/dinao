@@ -1,6 +1,6 @@
 """Tests the functionality in the dinao.binding module."""
 
-from typing import Generator, Mapping, Tuple
+from typing import Generator, Mapping, Optional, Tuple
 
 from dinao.binding.binders import FunctionBinder
 from dinao.binding.errors import TooManyRowsError
@@ -227,3 +227,82 @@ def test_binder_passes_cnx(binder_and_pool: Tuple[FunctionBinder, MockConnection
         ("INSERT INTO table (%s), (%s)", (1, 2)),
         ("SELECT * FROM table WHERE thing = %s", ("test",)),
     ]
+
+
+@pytest.mark.parametrize(
+    "binder_and_pool",
+    [
+        [
+            MockDQLCursor([(True,)], (("exists", 0),)),
+        ],
+    ],
+    indirect=["binder_and_pool"],
+)
+def test_binder_bool_return(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests binder when the result type is bool (Issue #58)."""
+    binder, pool = binder_and_pool
+
+    @binder.query("SELECT EXISTS(SELECT 1 FROM table WHERE col = #{arg})")
+    def query_bool_return(arg: str) -> bool:
+        pass  # pragma: no cover
+
+    result = query_bool_return("test")
+    assert result is True
+
+
+@pytest.mark.parametrize(
+    "binder_and_pool",
+    [
+        [
+            MockDQLCursor([("found",)], (("value", 0),)),
+            MockDQLCursor([], (("value", 0),)),
+            MockDQLCursor([(1, "test", 3.0)], (("field_01", 0), ("field_02", 1), ("field_03", 2))),
+            MockDQLCursor([], (("field_01", 0), ("field_02", 1), ("field_03", 2))),
+        ],
+    ],
+    indirect=["binder_and_pool"],
+)
+def test_binder_optional_return(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests binder when the result type is Optional[X] or X | None (Issue #59)."""
+    binder, pool = binder_and_pool
+
+    @binder.query("SELECT value FROM table WHERE col = #{arg}")
+    def query_optional_str(arg: str) -> Optional[str]:
+        pass  # pragma: no cover
+
+    @binder.query("SELECT value FROM table WHERE col = #{arg}")
+    def query_union_none_str(arg: str) -> str | None:
+        pass  # pragma: no cover
+
+    class ResultClass:
+        def __init__(self, field_01: int, field_02: str, field_03: float):
+            self.field_01 = field_01
+            self.field_02 = field_02
+            self.field_03 = field_03
+
+    @binder.query("SELECT field_01, field_02, field_03 FROM table WHERE col = #{arg}")
+    def query_optional_class(arg: str) -> Optional[ResultClass]:
+        pass  # pragma: no cover
+
+    @binder.query("SELECT field_01, field_02, field_03 FROM table WHERE col = #{arg}")
+    def query_union_none_class(arg: str) -> ResultClass | None:
+        pass  # pragma: no cover
+
+    # Test Optional[str] with result
+    result = query_optional_str("exists")
+    assert result == "found"
+
+    # Test str | None with no result
+    result = query_union_none_str("not_exists")
+    assert result is None
+
+    # Test Optional[Class] with result
+    result = query_optional_class("exists")
+    assert isinstance(result, ResultClass)
+    assert result.field_01 == 1
+    assert result.field_02 == "test"
+    assert result.field_03 == 3.0
+
+    # Test Class | None with no result
+    result = query_union_none_class("not_exists")
+    assert result is None

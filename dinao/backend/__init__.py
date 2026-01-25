@@ -9,7 +9,6 @@ from dinao.backend.mysql import ConnectionPoolMySQL
 from dinao.backend.postgres import ConnectionPoolPSQLPsycopg2
 from dinao.backend.sqlite import ConnectionPoolSQLite3
 
-
 ENGINE_DEFAULTS = {"postgresql": "psycopg2", "sqlite3": None, "mariadb": "mariadbconnector", "mysql": "mysqlconnector"}
 
 

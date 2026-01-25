@@ -1,4 +1,5 @@
 """Implementation of mariadb backends."""
+
 import uuid
 
 from dinao.backend.base import Connection, ConnectionPool

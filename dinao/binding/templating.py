@@ -50,7 +50,7 @@ class Template:
                     (~OPENS + "{") | (~OPENS + "}"))                                        # noqa: E221
     IDENTIFIER   = Word(alphas, alphanums + "_")                                            # noqa: E221
     REPLACEMENT  = (IDENTIFIER + ZeroOrMore(Suppress(".") + IDENTIFIER))                    # noqa: E221
-    PLAIN_TEXT   = Word(printables, excludeChars="#!{}")                                    # noqa: E221
+    PLAIN_TEXT   = Word(printables, exclude_chars="#!{}")                                   # noqa: E221
     NULL_SPACE   = ZeroOrMore(White())                                                      # noqa: E221
     LOOKUP_VAR   = Forward()                                                                # noqa: E221
     LOOKUP_REP   = Forward()                                                                # noqa: E221
@@ -70,9 +70,9 @@ class Template:
         self._parsed_template = []
         self._arguments = []
         try:
-            nodes = self.GRAMMAR.parseString(sql_template, parseAll=True)
+            nodes = self.GRAMMAR.parse_string(sql_template, parse_all=True)
         except ParseBaseException as x:
-            raise TemplateError(f"{x.msg}:\n{x.line}\n{(' '*(x.col -1 ))}^")
+            raise TemplateError(f"{x.msg}:\n{x.line}\n{(' ' * (x.col - 1))}^")
         for node in nodes:
             if not isinstance(node, str):
                 is_replace = node.pop(0) == "!"
