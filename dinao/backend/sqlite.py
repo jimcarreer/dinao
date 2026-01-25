@@ -1,4 +1,5 @@
 """Implementation of SQLite backends."""
+
 import os.path
 import sqlite3
 

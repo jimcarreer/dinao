@@ -72,7 +72,7 @@ class Template:
         try:
             nodes = self.GRAMMAR.parseString(sql_template, parseAll=True)
         except ParseBaseException as x:
-            raise TemplateError(f"{x.msg}:\n{x.line}\n{(' '*(x.col -1 ))}^")
+            raise TemplateError(f"{x.msg}:\n{x.line}\n{(' ' * (x.col - 1))}^")
         for node in nodes:
             if not isinstance(node, str):
                 is_replace = node.pop(0) == "!"

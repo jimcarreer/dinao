@@ -27,7 +27,9 @@ def test_cannot_infer_generic(binder_and_pool: Tuple[FunctionBinder, MockConnect
     binder, _ = binder_and_pool
 
     # Match either "typing.Union[str, int]" (Python <3.14) or "str | int" (Python 3.14+)
-    with pytest.raises(CannotInferMappingError, match=r"Unable to determine mapper for (typing\.Union\[str, int\]|str \| int)"):
+    with pytest.raises(
+        CannotInferMappingError, match=r"Unable to determine mapper for (typing\.Union\[str, int\]|str \| int)"
+    ):
 
         @binder.query("SELECT * FROM table")
         def raises_cannot_infer() -> Union[str, int]:

@@ -1,4 +1,5 @@
 """Basic test of the mysql implementation of the primitive database interfaces."""
+
 from pathlib import Path
 
 from dinao.backend import create_connection_pool
