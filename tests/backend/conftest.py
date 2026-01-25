@@ -2,6 +2,7 @@
 
 import os
 import uuid
+from typing import Any, Generator
 
 import pytest
 
@@ -13,7 +14,7 @@ def rand_db_name() -> str:
 
 
 @pytest.fixture()
-def tmp_psql_db_url(rand_db_name) -> str:
+def tmp_psql_db_url(rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test postgres instance."""
     import psycopg2
     from tests.backend import postgres_test_sql as test_sql
@@ -35,7 +36,7 @@ def tmp_psql_db_url(rand_db_name) -> str:
 
 
 @pytest.fixture()
-def tmp_maria_db_url(rand_db_name) -> str:
+def tmp_maria_db_url(rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test mariadb instance."""
     import mariadb
     from tests.backend import mariadb_test_sql as test_sql
@@ -63,7 +64,7 @@ def tmp_maria_db_url(rand_db_name) -> str:
 
 
 @pytest.fixture()
-def tmp_mysql_db_url(rand_db_name) -> str:
+def tmp_mysql_db_url(rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test mariadb instance."""
     import mariadb
     from tests.backend import mariadb_test_sql as test_sql
@@ -91,6 +92,6 @@ def tmp_mysql_db_url(rand_db_name) -> str:
 
 
 @pytest.fixture()
-def tmp_sqlite3_db_url(tmpdir, rand_db_name) -> str:
+def tmp_sqlite3_db_url(tmpdir, rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test sqlite instance."""
     yield f"sqlite3://{tmpdir}/{rand_db_name}"

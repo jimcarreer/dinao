@@ -6,6 +6,7 @@ import types
 import typing
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
+from typing import Any, Generator
 
 from dinao.backend.base import Connection, ConnectionPool, ResultSet
 from dinao.binding.errors import (
@@ -187,7 +188,7 @@ class FunctionBinder:
         # fmt: on
 
     @contextmanager
-    def connection(self) -> Connection:
+    def connection(self) -> Generator[Connection | None | Any, Any, None]:
         """Context manger for database connections used by bound functions.
 
         An active connection will be kept and yielded, provided to all contexts within the context that initially asked

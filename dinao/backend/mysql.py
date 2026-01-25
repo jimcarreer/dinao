@@ -2,6 +2,7 @@
 
 import uuid
 from contextlib import contextmanager
+from typing import Any, Generator
 
 from dinao.backend.base import Connection, ConnectionPool, ResultSet
 from dinao.backend.errors import BackendNotInstalledError, ConfigurationError, ConnectionPoolClosed
@@ -14,7 +15,7 @@ class ConnectionMySQL(Connection):
         cursor.execute(sql, params)
 
     @contextmanager
-    def query(self, sql: str, params: tuple = None) -> ResultSet:
+    def query(self, sql: str, params: tuple = None) -> Generator[ResultSet, Any, None]:
         """Execute the given SQL as a statement with the given parameters. Provide the results as context.
 
         :param sql: the SQL statement(s) to execute
