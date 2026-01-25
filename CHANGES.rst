@@ -5,11 +5,36 @@ Change Log
 --------------
 Place holder for next version.
 
+Breaking Changes
+################
+
 Features
 ########
 
+Chores
+######
+
 Bug Fixes
 #########
+
+2.0.0
+-----
+General refresh and minor bug fixes
+
+Breaking Changes
+################
+* Drop support for python 3 before 3.10
+
+Chores
+######
+* Add testing and support for python 3.12+
+* Add example for pydantic
+* Modernize and refresh build
+
+Bug Fixes
+#########
+* Missing mapping for native bool
+* Optional / Nullable Union type should be allowed
 
 1.4.0
 -----
