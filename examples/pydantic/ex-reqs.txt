@@ -1,0 +1,3 @@
+# pip install -r ex-reqs.txt && python sqlite.py
+dinao
+pydantic
