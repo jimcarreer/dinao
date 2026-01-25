@@ -14,7 +14,7 @@ class Smacker(threading.Thread):
     def __init__(self, worker_num: int):
         super().__init__()
         self.shutdown_flag = threading.Event()
-        self.api = "http://localhost:5000/"
+        self.api = "http://localhost:5001/"
         self.worker_num = worker_num
 
     def _api_action(self) -> requests.Response:

@@ -16,4 +16,4 @@ done
 echo "Running ini"
 python3 ./ini.py
 echo "Starting gunicorn"
-gunicorn --preload -w 5 --bind 0.0.0.0:5000 api:app
+gunicorn --preload -w 5 --bind 0.0.0.0:5000 "api:app"
