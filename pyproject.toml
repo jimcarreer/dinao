@@ -1,0 +1,87 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dinao"
+dynamic = ["version"]
+description = "A simple database API"
+readme = "README.rst"
+license = "ISC"
+requires-python = ">=3.10"
+authors = [
+    { name = "Jim Carreer", email = "jim.carreer+dinao@gmail.com" }
+]
+keywords = ["database", "api", "sql", "mapping"]
+classifiers = [
+    "Topic :: Database",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "pyparsing>=3.0.9",
+]
+
+[project.optional-dependencies]
+tests = [
+    "pytest",
+    "pytest-cov",
+    "psycopg2-binary",
+    "mariadb",
+    "mysql-connector-python",
+]
+lint = [
+    "black>=22.12.0",
+    "flake8",
+    "flake8-import-order",
+    "flake8-builtins",
+    "flake8-docstrings>=1.3.1",
+    "flake8-rst-docstrings",
+    "pydocstyle",
+    "pygments",
+    "pyspelling==2.8.1",
+]
+dev = [
+    "dinao[tests,lint]",
+    "tox",
+]
+
+[project.urls]
+Homepage = "https://github.com/jimcarreer/dinao"
+Repository = "https://github.com/jimcarreer/dinao"
+Issues = "https://github.com/jimcarreer/dinao/issues"
+
+[tool.setuptools.dynamic]
+version = { attr = "dinao.__version__.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["dinao*"]
+
+[tool.black]
+line-length = 120
+target-version = ["py310", "py311", "py312", "py313"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--cov=dinao",
+    "--cov=tests",
+    "--cov-report=term",
+    "--cov-report=html:coverage_report",
+    "--cov-fail-under=99",
+]
+
+[tool.coverage.run]
+source = ["dinao", "tests"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+]
