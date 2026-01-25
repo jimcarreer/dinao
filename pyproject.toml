@@ -75,6 +75,7 @@ addopts = [
     "--cov-report=html:coverage_report",
     "--cov-fail-under=99",
 ]
+filterwarnings = ["error"]
 
 [tool.coverage.run]
 source = ["dinao", "tests"]
