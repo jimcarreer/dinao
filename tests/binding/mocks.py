@@ -1,8 +1,9 @@
 """Mock implementations of Database interface for use in testing binding and mapping functionality."""
 
 from contextlib import contextmanager
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, Any, Generator
 
+from dinao.backend import ResultSet
 from dinao.backend.base import Connection, ConnectionPool, ResultSet
 
 
@@ -105,7 +106,7 @@ class MockConnection(Connection):
         self.rollbacks += 1
 
     @contextmanager
-    def query(self, sql: str, params: tuple = None) -> ResultSet:  # noqa: D102
+    def query(self, sql: str, params: tuple = None) -> Generator[ResultSet, Any, None]:  # noqa: D102
         self.query_stack.append((sql, params))
         self.queries += 1
         if self.autocommit:

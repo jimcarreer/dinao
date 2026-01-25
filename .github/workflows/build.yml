@@ -5,6 +5,7 @@ on: push
 jobs:
 
   quality:
+    name: Quality Assurance
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +22,7 @@ jobs:
         run: tox -e flake,spell,blacken
 
   testing:
+    name: Unit and Integration Testing
     runs-on: ubuntu-latest
     strategy:
       matrix:

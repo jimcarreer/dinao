@@ -1,6 +1,6 @@
 """Implements a simple templating grammar / parser for binding SQL to functions."""
 
-from typing import Tuple
+from typing import Tuple, Any
 
 from dinao.binding.errors import TemplateError
 
@@ -16,7 +16,7 @@ from pyparsing import (  # noqa: I101
 class TemplateParameter:
     """Represents a parameter for prepared statement rendered from a template."""
 
-    def __init__(self, kwarg_path: Tuple[str], is_replace: bool = False):
+    def __init__(self, kwarg_path: Tuple[str, ...], is_replace: bool = False):
         """Construct a template parameter.
 
         :param kwarg_path: an immutable list representing the 'path' of the parameter in a root dictionary of arguments
@@ -87,7 +87,7 @@ class Template:
         self._arguments = tuple(self._arguments)
 
     @property
-    def arguments(self) -> Tuple[Tuple[str]]:
+    def arguments(self) -> tuple[Any, ...]:
         """Return the arguments expected by the template."""
         return self._arguments
 
@@ -96,13 +96,13 @@ class Template:
         return self._sql_template
 
     @staticmethod
-    def _resolve_value(kwarg_path: Tuple[str], root_args: dict):
+    def _resolve_value(kwarg_path: Tuple[str, ...], root_args: dict):
         node = root_args
         for arg_name in kwarg_path:
             node = node[arg_name] if isinstance(node, dict) else getattr(node, arg_name)
         return node
 
-    def render(self, mung_symbol: str, kwargs: dict) -> [str, tuple]:
+    def render(self, mung_symbol: str, kwargs: dict) -> tuple[str | Any, tuple[Any, ...]]:
         """Render the template to SQL execution arguments.
 
         :param mung_symbol: the symbol used to replace parameters in the template
