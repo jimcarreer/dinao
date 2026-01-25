@@ -20,6 +20,7 @@ NATIVE_SINGLE = [str, int, float, complex, bool, datetime, UUID]
 # In Python 3.14+, inspect.isclass() returns True for these, but they cannot be instantiated
 TYPING_SPECIAL_FORMS = {typing.Union, typing.Optional}
 
+
 class RowMapper(ABC):
     """Interface for database results mapper."""
 
