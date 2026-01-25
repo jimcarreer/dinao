@@ -33,6 +33,7 @@ class SomeClass:
         (int, SingleValueRowMapper),
         (float, SingleValueRowMapper),
         (complex, SingleValueRowMapper),
+        (bool, SingleValueRowMapper),
         (datetime, SingleValueRowMapper),
         (UUID, SingleValueRowMapper),
         (tuple, TupleRowMapper),

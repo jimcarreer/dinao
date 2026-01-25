@@ -14,7 +14,15 @@ TUPLE_GENERICS = [tuple, typing.Tuple]
 GENERATOR_GENERICS = [collections.abc.Generator, typing.Generator]
 DICT_GENERICS = [dict, typing.Dict, typing.Mapping, collections.abc.Mapping]
 LIST_GENERICS = [list, typing.List, typing.Iterable, collections.abc.Sequence, collections.abc.Iterable]
-NATIVE_SINGLE = [str, int, float, complex, datetime, UUID]
+NATIVE_SINGLE = [str, int, float, complex, bool, datetime, UUID]
+
+# Typing special forms that should not be treated as mappable classes
+# In Python 3.14+, inspect.isclass() returns True for these, but they cannot be instantiated
+TYPING_SPECIAL_FORMS = {typing.Union, typing.Optional}
+
+# Typing special forms that should not be treated as mappable classes
+# In Python 3.14+, inspect.isclass() returns True for these, but they cannot be instantiated
+TYPING_SPECIAL_FORMS = {typing.Union, typing.Optional}
 
 
 class RowMapper(ABC):
@@ -88,6 +96,10 @@ def get_row_mapper(row_type: typing.Type) -> typing.Optional[RowMapper]:
         return DictRowMapper()
     elif row_type in NATIVE_SINGLE:
         return SingleValueRowMapper()
+    # Exclude typing special forms that look like classes in Python 3.14+
+    # Bare Union/Optional without type parameters cannot be mapped
+    elif row_type in TYPING_SPECIAL_FORMS:
+        return None
     # Finally fall back to kwargs init
     elif inspect.isclass(row_type):
         return ClassRowMapper(row_type)
