@@ -35,6 +35,7 @@ fetchall
 fetchone
 fmt
 func
+ge
 getattr
 getconn
 github
@@ -81,6 +82,7 @@ psql
 psycopg
 putconn
 py
+pydantic
 pyparsing
 pypiv
 pyspelling
