@@ -4,7 +4,7 @@ import logging
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import List, Tuple, Any, Generator
+from typing import Any, Generator, List, Tuple
 from urllib.parse import parse_qs, urlparse
 
 from dinao.backend.errors import ConfigurationError

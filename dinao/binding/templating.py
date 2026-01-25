@@ -1,6 +1,6 @@
 """Implements a simple templating grammar / parser for binding SQL to functions."""
 
-from typing import Tuple, Any
+from typing import Any, Tuple
 
 from dinao.binding.errors import TemplateError
 

@@ -8,7 +8,6 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import Any, Generator
 
-from dinao.backend import Connection
 from dinao.backend.base import Connection, ConnectionPool, ResultSet
 from dinao.binding.errors import (
     BadReturnTypeError,

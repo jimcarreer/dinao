@@ -4,7 +4,6 @@ import uuid
 from contextlib import contextmanager
 from typing import Any, Generator
 
-from dinao.backend import ResultSet
 from dinao.backend.base import Connection, ConnectionPool, ResultSet
 from dinao.backend.errors import BackendNotInstalledError, ConfigurationError, ConnectionPoolClosed
 
