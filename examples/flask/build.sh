@@ -2,7 +2,7 @@
 set -e
 
 SRC_PATH=`readlink -f ../../`
-CP_FILES="${SRC_PATH}/requirements.txt ${SRC_PATH}/setup.py ${SRC_PATH}/README.rst"
+CP_FILES="${SRC_PATH}/pyproject.toml"
 TEMP_DIR="./dinao-tmp/"
 
 function cleanup {
