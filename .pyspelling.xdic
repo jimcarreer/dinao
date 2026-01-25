@@ -67,6 +67,7 @@ mysql
 mysqlconnector
 noqa
 ns
+nullable
 num
 ok
 orm
