@@ -16,6 +16,7 @@ boolean
 classmethod
 closeall
 cls
+calc
 cnt
 cnx
 concat
@@ -75,6 +76,7 @@ os
 param
 parameterization
 params
+perf
 postgres
 postgresql
 pragma
