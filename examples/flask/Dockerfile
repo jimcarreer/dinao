@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.14
 WORKDIR /usr/src/app
 
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -6,9 +6,9 @@ ENV PYTHONUNBUFFERED 1
 RUN apt-get update -y
 RUN apt-get install netcat-openbsd
 RUN pip install --upgrade pip
-RUN pip install flask==2.2.5
+RUN pip install flask
 RUN pip install psycopg2-binary
-RUN pip install gunicorn==20.1.0
+RUN pip install gunicorn
 
 COPY ./dinao-tmp/ /dinao/
 RUN pip install /dinao/

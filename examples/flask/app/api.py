@@ -15,8 +15,8 @@ def make_error(error: str, status: int = 400):
     return jsonify({"error": error}), status
 
 
-@app.before_first_request
-def register_shutdowns():
+
+def setup_db():
     con_url = "postgresql://test_user:test_pass@postgres:5432/test_db"
     db_pool = create_connection_pool(con_url)
     print("Setting pool for binder.")
@@ -29,6 +29,8 @@ def register_shutdowns():
 
 @app.before_request
 def before_request():
+    if dbi.binder.pool is None:
+        setup_db()
     g.started = time.time_ns() / 1000000.0
 
 
