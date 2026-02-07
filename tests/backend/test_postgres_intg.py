@@ -16,7 +16,7 @@ from tests.backend import postgres_test_sql as test_sql
         "",
         "pool_min_conn=1",
         "pool_min_conn=1&pool_max_conn=3",
-        "sslmode=verify-full&sslrootcert=./vols/tls/ca.crt",
+        "sslmode=verify-full&sslrootcert=./tests/vols/tls/ca.crt",
         "sslmode=prefer",
     ],
 )
