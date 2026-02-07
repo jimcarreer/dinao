@@ -1,3 +1,0 @@
-[mysqld]
-ssl_cert = /certs/server.crt
-ssl_key = /certs/server.key
