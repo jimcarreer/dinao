@@ -10,7 +10,7 @@ import pytest
 
 from tests.backend import mariadb_test_sql as test_sql
 
-CA_PATH = Path("./vols/tls/ca.crt").absolute()
+CA_PATH = Path("./tests/vols/tls/ca.crt").absolute()
 
 
 @pytest.mark.parametrize(
