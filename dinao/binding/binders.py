@@ -96,7 +96,8 @@ class FunctionBinder:
         """Binds a given function to a given SQL template.
 
         .. warning::
-            The execution of the SQL given is not expected to return results / rows. Use the
+            The execution of the SQL given is not expected to return results / rows. Use the ``query``
+            decorator for SQL that returns rows.
 
         .. note::
             The return type of the decorated / bound function may return an int, which will make it return the number of
@@ -123,20 +124,21 @@ class FunctionBinder:
     def query(self, sql: str) -> callable:
         """Binds a given function to a given SQL template.
 
-        .. warning::
-            Currently return type mapping is not implemented if the return type specified on the bound function is not
-            either empty or None a NotImplementedError is raised.  A list of tuples is returned when the return hint is
-            left empty, representing the results from the query.
+        The return type annotation of the bound function determines how query results are mapped. Supported return
+        types include: bare classes and dataclasses (single row), ``Optional[X]`` (single row or None),
+        ``List[X]`` (multiple rows), ``dict`` (single row as dict), ``Generator[X, None, None]`` (streaming rows),
+        and native types like ``str``, ``int``, etc. (single column value). If no return type is specified, the
+        default is ``List[tuple]``.
 
         Example::
 
-            @binder.query("SELECT * INTO my_table WHERE col_1 = #{arg1.some_key_or_member} AND col_2 = #{arg2}")
+            @binder.query("SELECT * FROM my_table WHERE col_1 = #{arg1.some_key_or_member} AND col_2 = #{arg2}")
             def my_bound_func(arg1: dict, arg2: str):
                 pass
 
         :param sql: a SQL template to bind the function execution to
         :returns: a decorator expecting a callable
-        :raises: NotImplementedError, FunctionAlreadyBoundError
+        :raises: CannotInferMappingError, FunctionAlreadyBoundError
         """
         # fmt: off
         def decorated(func: callable):
@@ -157,14 +159,14 @@ class FunctionBinder:
 
         Example::
 
-            @binder.query("SELECT * INTO my_table WHERE col_1 = #{arg1.some_key_or_member} AND col_2 = #{arg2}")
+            @binder.query("SELECT * FROM my_table WHERE col_1 = #{arg1.some_key_or_member} AND col_2 = #{arg2}")
             def my_select(arg1: dict, arg2: str):
                 pass
 
             @binder.execute(
                 "INSERT INTO stats_table VALUES "
-                "(#{stats.name}, #{stats.value}) "
-                "ON CONFLICT (name) DO UPDATE SET value = #{stats.value}"
+                "(#{stat.name}, #{stat.value}) "
+                "ON CONFLICT (name) DO UPDATE SET value = #{stat.value}"
             )
             def my_update(stat: dict) -> int:
                 pass
@@ -172,13 +174,13 @@ class FunctionBinder:
             @binder.transaction()
             def my_transaction(arg1: dict, stat_name: str) -> int:
                 my_table_results = my_select(arg1, stat_name)
-                stat = {"name": stat, "value": 0}
+                stat = {"name": stat_name, "value": 0}
                 for row in my_table_results:
                     stat["value"] += row[0]
                 return my_update(stat=stat)
 
         :returns: a decorator expecting a callable
-        :raises: NotImplementedError, FunctionAlreadyBoundError
+        :raises: MultipleConnectionArgumentError, FunctionAlreadyBoundError
         """
         # fmt: off
         def decorated(func: callable):
@@ -189,7 +191,7 @@ class FunctionBinder:
 
     @contextmanager
     def connection(self) -> Generator[Connection | None | Any, Any, None]:
-        """Context manger for database connections used by bound functions.
+        """Context manager for database connections used by bound functions.
 
         An active connection will be kept and yielded, provided to all contexts within the context that initially asked
         for it.
@@ -422,7 +424,7 @@ class BoundTransaction(BoundFunction):
         """Construct a BoundFunction that represents a transaction.
 
         :param binder: the binder to which this bound function belongs
-        :param func: the callable being bound to the given SQL
+        :param func: the callable to be executed within a transaction
 
         :raises: MultipleConnectionArgumentError
         """
