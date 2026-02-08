@@ -2,15 +2,51 @@
 
 ## <NEXT VERSION>
 
-Place holder for next version.
+-   Placeholder for next version.
+
+## 2.1.0
+
+Async support, psycopg (v3) backend, and project modernization.
 
 ### Breaking Changes
 
+-   Internal class renames: `Bounded*` classes renamed to `Bound*`
+    (`BoundedFunction` -> `BoundFunction`, `BoundedQuery` ->
+    `BoundQuery`, etc.). These were not part of the public API
+    exports but may affect code importing them directly.
+-   Internal module restructuring: `dinao/binding/binders.py` and
+    `dinao/backend/postgres.py` converted from single files to
+    packages. Public import paths through `dinao.binding` and
+    `dinao.backend` are preserved.
+
 ### Features
+
+-   Full async support for binding and backend layers, including
+    `AsyncFunctionBinder`, `AsyncConnectionPool`, and
+    `AsyncConnection`
+-   psycopg (v3) backend support for PostgreSQL, both sync and
+    async modes (`postgresql+psycopg://` and
+    `postgresql+psycopg+async://`)
+-   FastAPI example demonstrating async usage
+-   Backend documentation (`BACKENDS.md`) covering all supported
+    databases, URL formats, and async usage
+-   CI preview publish job for dev builds to PyPI
 
 ### Chores
 
+-   Migrate documentation from reStructuredText to Markdown
+-   Remove tox in favor of direct tool invocation in CI
+-   Move docker-compose and test volumes into `tests/` directory
+-   Add `CLAUDE.md` for Claude Code guidance
+-   Refactor test fixtures into shared conftest modules
+-   Add comprehensive async binder test suite
+-   Update pyspelling and spelling dictionary
+-   Fix codecov token handling in CI
+
 ### Bug Fixes
+
+-   MySQL backend error message incorrectly referenced mariadb
+    module instead of mysql-connector-python
 
 ## 2.0.0
 
