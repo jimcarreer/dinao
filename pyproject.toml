@@ -47,7 +47,7 @@ lint = [
     "flake8-rst-docstrings",
     "pydocstyle",
     "pygments",
-    "pyspelling==2.8.1",
+    "pyspelling>=2.12.1",
 ]
 dev = [
     "dinao[tests,lint]",

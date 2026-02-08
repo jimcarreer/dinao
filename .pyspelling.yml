@@ -10,9 +10,9 @@ matrix:
         - .pyspelling.xdic
     sources:
       - ./dinao/**/*.py
-      - ./*.rst
+      - ./*.md
       - ./dinao/LICENSE
-      - ./examples/**/*.rst
+      - ./examples/**/*.md
       - ./examples/**/*.py
     pipeline:
       - pyspelling.filters.url:
