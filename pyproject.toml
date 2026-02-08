@@ -32,6 +32,8 @@ tests = [
     "pytest",
     "pytest-cov",
     "psycopg2-binary",
+    "psycopg[binary]",
+    "psycopg-pool",
     "mariadb",
     "mysql-connector-python",
 ]
