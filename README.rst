@@ -162,11 +162,37 @@ that means, given a version number MAJOR.MINOR.PATCH, increment:
  2. MINOR version when you add functionality in a backwards compatible manner
  3. PATCH version when you make backwards compatible bug fixes
 
-Changes for the next version should be accumulated on the main branch until
-such time that there is enough confidence in the build that it can be released.
-When this is done, a repository administrator opens a PR to bump the version in
-`__version__.py` updates the change logs, merges this PR then tags the merge
-with the release version.  Only tagged commits of main are built and published.
+Preview Builds
+**************
+
+Every merge to main automatically publishes a development preview to PyPI,
+provided that ``__version__.py`` contains a ``.dev`` suffix.  These builds
+use `PEP 440`_ development release versions (e.g. ``2.1.0.dev42``).
+
+To install the latest preview:
+
+.. code-block::
+
+    $ pip install --pre dinao
+
+Preview builds are **not** installed by default; ``pip install dinao`` will
+always resolve to the latest stable release.
+
+Stable Releases
+***************
+
+Changes for the next version accumulate on the main branch until there is
+enough confidence in the build that it can be released.  The release
+workflow is:
+
+ 1. A repository administrator opens a PR to set ``__version__.py`` to the
+    release version (e.g. ``2.1.0``), and updates the change logs
+ 2. The PR is merged to main and the merge commit is tagged with the
+    release version (e.g. ``release/2.1.0``)
+ 3. Only tagged commits of main are built and published as stable releases
+ 4. Immediately after tagging, a follow-up PR bumps ``__version__.py`` to
+    the next anticipated version with a ``.dev0`` suffix
+    (e.g. ``2.2.0.dev0``) so that preview builds resume
 
 
 .. |build-status| image:: https://github.com/jimcarreer/dinao/workflows/Build/badge.svg?branch=main
@@ -187,6 +213,7 @@ with the release version.  Only tagged commits of main are built and published.
 .. _code of conduct: https://github.com/jimcarreer/dinao/blob/main/CODE_OF_CONDUCT.rst
 .. _contributing documentation: https://github.com/jimcarreer/dinao/blob/main/CONTRIBUTING.rst
 .. _semantic versioning 2.0.0: https://semver.org/spec/v2.0.0.html
+.. _PEP 440: https://peps.python.org/pep-0440/
 .. _backends documentation: BACKENDS.rst
 .. _psycopg2: https://pypi.org/project/psycopg2/
 .. _psycopg (v3): https://pypi.org/project/psycopg/

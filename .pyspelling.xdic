@@ -37,6 +37,7 @@ dataclass
 dataclasses
 datetime
 dbi
+dev
 dbname
 dinao
 elif
@@ -98,6 +99,7 @@ pem
 perf
 postgres
 postgresql
+pre
 pragma
 printables
 psql
