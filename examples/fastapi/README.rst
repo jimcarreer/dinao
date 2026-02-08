@@ -34,5 +34,5 @@ which provides an ASGI server capable of running async request handlers.
 Unlike the Flask / WSGI example, async workers handle concurrency within
 each process, so fewer worker processes are needed.
 
-The database pool is initialized in FastAPI's ``lifespan`` context manager,
+The database pool is initialized using a FastAPI ``lifespan`` context manager,
 which ensures proper setup on startup and cleanup on shutdown.
