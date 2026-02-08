@@ -7,7 +7,7 @@ RUN apt-get update -y
 RUN apt-get install netcat-openbsd
 RUN pip install --upgrade pip
 RUN pip install flask
-RUN pip install psycopg2-binary
+RUN pip install psycopg[binary] psycopg-pool
 RUN pip install gunicorn
 
 COPY ./dinao-tmp/ /dinao/

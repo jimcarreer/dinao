@@ -64,7 +64,11 @@ mariadbconnector
 maxconn
 minconn
 msg
+myapp
+mydb
+mypass
 mysql
+myuser
 mysqlconnector
 noqa
 ns
@@ -76,6 +80,7 @@ os
 param
 parameterization
 params
+pem
 perf
 postgres
 postgresql

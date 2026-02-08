@@ -46,8 +46,13 @@ Install via pip:
 You will also need to install your backend driver.  Backends + drivers
 supported are:
 
-* Sqlite3 via Python's standard library
-* PostgreSQL via psycopg2
+* SQLite3 via Python's standard library
+* PostgreSQL via `psycopg2`_ or `psycopg (v3)`_
+* MariaDB via `mariadb connector`_
+* MySQL via `mysql-connector-python`_
+
+For detailed connection string formats and examples see the
+`backends documentation`_.
 
 Basic Example
 *************
@@ -165,3 +170,8 @@ with the release version.  Only tagged commits of main are built and published.
 .. _code of conduct: https://github.com/jimcarreer/dinao/blob/main/CODE_OF_CONDUCT.rst
 .. _contributing documentation: https://github.com/jimcarreer/dinao/blob/main/CONTRIBUTING.rst
 .. _semantic versioning 2.0.0: https://semver.org/spec/v2.0.0.html
+.. _backends documentation: BACKENDS.rst
+.. _psycopg2: https://pypi.org/project/psycopg2/
+.. _psycopg (v3): https://pypi.org/project/psycopg/
+.. _mariadb connector: https://pypi.org/project/mariadb/
+.. _mysql-connector-python: https://pypi.org/project/mysql-connector-python/
