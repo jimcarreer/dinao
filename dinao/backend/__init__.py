@@ -6,7 +6,7 @@ from dinao.backend.base import Connection, ConnectionPool, ResultSet
 from dinao.backend.errors import ConfigurationError, UnsupportedBackendError
 from dinao.backend.mariadb import ConnectionPoolMariaDB
 from dinao.backend.mysql import ConnectionPoolMySQL
-from dinao.backend.postgres import ConnectionPoolPSQLPsycopg2
+from dinao.backend.postgres import ConnectionPoolPSQLPsycopg2, ConnectionPoolPSQLPsycopg3
 from dinao.backend.sqlite import ConnectionPoolSQLite3
 
 ENGINE_DEFAULTS = {"postgresql": "psycopg2", "sqlite3": None, "mariadb": "mariadbconnector", "mysql": "mysqlconnector"}
@@ -33,6 +33,8 @@ def create_connection_pool(db_url: str) -> ConnectionPool:
     backend = backend[0]
     if backend == "postgresql" and engine == "psycopg2":
         return ConnectionPoolPSQLPsycopg2(db_url)
+    if backend == "postgresql" and engine == "psycopg":
+        return ConnectionPoolPSQLPsycopg3(db_url)
     if backend == "sqlite3" and engine is None:
         return ConnectionPoolSQLite3(db_url)
     if backend == "mariadb" and engine == "mariadbconnector":
