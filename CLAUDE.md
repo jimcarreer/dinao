@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-DINAO (Database Is Not An ORM) is a Python library for simple database access without a full ORM. Developers write SQL 
-directly; DINAO provides function binding via decorators, automatic result mapping to Python types, and connection 
-pooling. Supports multiple relation database backends
+DINAO (DINAO Is Not An ORM, recursive acronym) is a Python library for simple database access without a full ORM.
+Developers write SQL directly; DINAO provides function binding via decorators, automatic result mapping to Python types,
+and connection pooling. Supports multiple relational database backends.
 
 ## Preflight Checks for New Feature Work
 
