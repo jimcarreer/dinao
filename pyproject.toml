@@ -15,7 +15,6 @@ authors = [
 keywords = ["database", "api", "sql", "mapping"]
 classifiers = [
     "Topic :: Database",
-    "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

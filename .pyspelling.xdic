@@ -27,6 +27,8 @@ claude
 closeall
 cls
 cnt
+codecov
+conftest
 cnx
 concat
 conn
@@ -148,6 +150,7 @@ tid
 tls
 tmp
 todo
+tox
 traceback
 travis
 untrusted
