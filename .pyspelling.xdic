@@ -1,6 +1,7 @@
 abc
 abspath
 abstractmethod
+ai
 aiohttp
 alphanums
 api
@@ -22,6 +23,7 @@ bool
 boolean
 calc
 classmethod
+claude
 closeall
 cls
 cnt
@@ -37,16 +39,20 @@ dataclass
 dataclasses
 datetime
 dbi
-dev
 dbname
+dev
+dicts
 dinao
+docstrings
 elif
 exc
 expanduser
 fastapi
 fetchall
 fetchone
+filterwarnings
 fmt
+formatter
 func
 ge
 getattr
@@ -75,10 +81,12 @@ mappable
 mariadb
 mariadbconnector
 maxconn
+md
 middleware
 minconn
 mixin
 msg
+multifile
 myapp
 mydb
 mypass
@@ -101,6 +109,7 @@ postgres
 postgresql
 pre
 pragma
+preflight
 printables
 psql
 psycopg
@@ -110,6 +119,7 @@ pydantic
 pyparsing
 pypiv
 pyspelling
+pytest
 pyver
 qs
 randint
@@ -149,5 +159,7 @@ uuid
 uvicorn
 uvicornworker
 varchar
+venv
 wsgi
 xdic
+yaml

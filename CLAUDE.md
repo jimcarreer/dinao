@@ -48,12 +48,10 @@ docker compose -f tests/docker-compose.yaml up -d
 
 ### Linting & Formatting
 ```bash
-# Run all checks via tox
-tox -e flake,blacken,spell
-
-# Individual checks
+# Run all checks
 flake8 ./dinao/ ./tests/
 black --check --diff ./dinao/ ./tests/
+pyspelling -v
 
 # Auto-format with black
 black ./dinao/ ./tests/
@@ -97,10 +95,10 @@ pip install -e ".[dev]"
     # Original file
     backend/postgres.py
     # New structure
-    backend/postres/
+    backend/postgres/
     backend/postgres/__init__.py
-    backend/postgres/pyscopg2.py
-    backend/postgres/pyscogp3.py
+    backend/postgres/psycopg2.py
+    backend/postgres/psycopg3.py
     ```
 - `create_connection_pool(url)` factory in `__init__.py` selects backend from URL scheme 
   (e.g. `postgresql+psycopg2://...`)
