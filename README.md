@@ -1,7 +1,7 @@
 # DINAO Is Not An ORM
 
 [![code-of-conduct](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md)
-[![build-status](https://github.com/jimcarreer/dinao/workflows/Build/badge.svg?branch=main)](https://github.com/jimcarreer/dinao)
+[![build-status](https://github.com/jimcarreer/dinao/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/jimcarreer/dinao/actions/workflows/build.yml)
 [![cover-status](https://codecov.io/gh/jimcarreer/dinao/branch/main/graph/badge.svg?token=CpJ5u1ngZH)](https://codecov.io/gh/jimcarreer/dinao)
 [![pyver-status](https://img.shields.io/pypi/pyversions/dinao)](https://pypi.org/project/dinao/)
 [![pypiv-status](https://badge.fury.io/py/dinao.svg?dummy)](https://pypi.org/project/dinao/)
