@@ -2,7 +2,7 @@
 
 import logging
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from typing import Any, Generator, List, Tuple
 from urllib.parse import parse_qs, urlparse
@@ -72,11 +72,60 @@ class ResultSet:
         return self._cursor.rowcount
 
 
-class Connection(ABC):
-    """Basic interface definition for a database connection."""
+class AsyncResultSet:
+    """Async interface definition for result sets returned from Database queries."""
+
+    def __init__(self, cursor):
+        """Construct an async result set.
+
+        :param cursor: the underlying async DB API cursor being wrapped by this object.
+        """
+        self._cursor = cursor
+        self._columns = None
+        self._description = None
+
+    async def fetchone(self) -> Tuple:
+        """Fetch one result tuple from the underlying cursor.
+
+        If no results are left, None is returned.
+
+        :returns: a tuple representing a result row or None
+        """
+        return await self._cursor.fetchone()
+
+    async def fetchall(self) -> List[Tuple]:
+        """Fetch the *remaining* result tuples from the underlying cursor.
+
+        If no results are left, an empty list is returned.
+
+        :returns: a list of tuples that are the remaining results of the underlying cursor.
+        """
+        return await self._cursor.fetchall()
+
+    @property
+    def description(self) -> Tuple[ColumnDescriptor]:
+        """Return a sequence of column descriptions representing the result set.
+
+        :returns: a tuple of ColumnDescriptors
+        """
+        if not self._description:
+            self._description = tuple([ColumnDescriptor(*(d[0:7])) for d in self._cursor.description])
+        return self._description
+
+    @property
+    def rowcount(self) -> int:
+        """Return the row count of the result set.
+
+        :returns: the integer count of the rows in the result set
+        """
+        return self._cursor.rowcount
+
+
+class ConnectionBase(ABC):
+    """Shared base for sync and async database connections."""
 
     def __init__(self, cnx, auto_commit: bool = True):
-        """Construct a Connection object.
+        """Construct a ConnectionBase object.
 
         :param cnx: the inner DB API 2.0 connection this object wraps
         :param auto_commit: should calls to execute() be automatically committed, defaults to True
@@ -92,7 +141,12 @@ class Connection(ABC):
 
     @autocommit.setter
     def autocommit(self, value: bool):
+        """Set the autocommit flag."""
         self._auto_commit = value
+
+
+class Connection(ConnectionBase):
+    """Basic interface definition for a database connection."""
 
     def commit(self):
         """Commit changes for this connection / transaction to the database."""
@@ -138,8 +192,55 @@ class Connection(ABC):
         return affected
 
 
-class ConnectionPool(ABC):
-    """Basic interface definition for a pool of database connections."""
+class AsyncConnection(ConnectionBase):
+    """Async interface definition for a database connection."""
+
+    async def commit(self):
+        """Commit changes for this connection / transaction to the database."""
+        await self._cnx.commit()
+
+    async def rollback(self):
+        """Rollback changes for this connection / transaction to the database."""
+        await self._cnx.rollback()
+
+    @abstractmethod
+    async def _execute(self, cursor, sql: str, params: tuple = None):
+        pass  # pragma: no cover
+
+    @asynccontextmanager
+    async def query(self, sql: str, params: tuple = None):
+        """Execute the given SQL as a statement with the given parameters. Provide the results as context.
+
+        :param sql: the SQL statement(s) to execute
+        :param params: the values to bind to the execution of the given SQL
+        :returns: an async result set representing the query's results
+        """
+        cursor = self._cnx.cursor()
+        await self._execute(cursor, sql, params)
+        try:
+            yield AsyncResultSet(cursor)
+        finally:
+            cursor.close()
+
+    async def execute(self, sql: str, params: tuple = None, commit: bool = None) -> int:
+        """Execute the given SQL as a statement with the given parameters and return the affected row count.
+
+        :param sql: the SQL statement(s) to execute
+        :param params: the values to bind to the execution of the given SQL
+        :param commit: commit the changes to the database after execution, defaults to value given in constructor
+        """
+        commit = commit if commit is not None else self._auto_commit
+        cursor = self._cnx.cursor()
+        await self._execute(cursor, sql, params)
+        affected = cursor.rowcount
+        if commit:
+            await self.commit()
+        cursor.close()
+        return affected
+
+
+class ConnectionPoolBase(ABC):
+    """Shared base for sync and async connection pools."""
 
     def __init__(self, db_url: str):
         """Construct a connection pool for the given connection URL.
@@ -186,6 +287,10 @@ class ConnectionPool(ABC):
         """Return the symbol used when replacing variable specifiers in templated SQL."""
         pass  # pragma: no cover
 
+
+class ConnectionPool(ConnectionPoolBase):
+    """Basic interface definition for a pool of database connections."""
+
     @abstractmethod
     def lease(self) -> Connection:
         """Lease a connection from the underlying pool."""
@@ -198,5 +303,24 @@ class ConnectionPool(ABC):
 
     @abstractmethod
     def dispose(self):
+        """Close the pool and clean up any resources it was using."""
+        pass  # pragma: no cover
+
+
+class AsyncConnectionPool(ConnectionPoolBase):
+    """Async interface definition for a pool of database connections."""
+
+    @abstractmethod
+    async def lease(self) -> AsyncConnection:
+        """Lease an async connection from the underlying pool."""
+        pass  # pragma: no cover
+
+    @abstractmethod
+    async def release(self, cnx: AsyncConnection):
+        """Release an async connection back to the underlying pool."""
+        pass  # pragma: no cover
+
+    @abstractmethod
+    async def dispose(self):
         """Close the pool and clean up any resources it was using."""
         pass  # pragma: no cover

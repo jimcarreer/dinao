@@ -23,3 +23,9 @@ class ConnectionPoolClosed(Exception):
     """Raised when a connection pool is closed."""
 
     pass
+
+
+class AsyncPoolRequiredError(Exception):
+    """Raised when an async binder is given a sync pool."""
+
+    pass

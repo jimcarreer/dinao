@@ -1,10 +1,12 @@
 """Tests various errors that can be thrown by binding."""
 
-from typing import Generator, List, Tuple, Union
+from typing import AsyncGenerator, Generator, List, Tuple, Union
 
 from dinao.backend import Connection
+from dinao.backend.errors import AsyncPoolRequiredError
 from dinao.binding import FunctionBinder
 from dinao.binding.binders import BoundGeneratingQuery
+from dinao.binding.binders.async_ import AsyncFunctionBinder
 from dinao.binding.errors import (
     BadReturnTypeError,
     CannotInferMappingError,
@@ -162,4 +164,35 @@ def test_binder_raises_for_double_connection_arg(binder_and_pool: Tuple[Function
 
         @binder.transaction()
         def should_raise_5(cnx1: Connection, cnx2: MockConnection):
+            pass  # pragma: no cover
+
+
+def test_async_binder_rejects_sync_pool():
+    """Tests that setting a sync pool on an AsyncFunctionBinder raises AsyncPoolRequiredError."""
+    binder = AsyncFunctionBinder()
+    pool = MockConnectionPool([])
+
+    with pytest.raises(AsyncPoolRequiredError, match="AsyncFunctionBinder requires an AsyncConnectionPool"):
+        binder.pool = pool
+
+
+def test_async_binding_generator_throws(async_binder_and_pool):
+    """Tests that async binding a generator with send/return types raises."""
+    binder, pool = async_binder_and_pool
+
+    with pytest.raises(CannotInferMappingError, match="Only yield_type"):
+
+        @binder.query("SELECT some_num FROM table LIMIT 3")
+        async def generating_query_bad() -> Generator[int, int, int]:
+            pass  # pragma: no cover
+
+
+def test_async_binding_async_generator_throws(async_binder_and_pool):
+    """Tests that async binding an AsyncGenerator with send type raises."""
+    binder, pool = async_binder_and_pool
+
+    with pytest.raises(CannotInferMappingError, match="Only yield_type should be specified for an async generator"):
+
+        @binder.query("SELECT some_num FROM table LIMIT 3")
+        async def async_generating_query_bad() -> AsyncGenerator[int, int]:
             pass  # pragma: no cover

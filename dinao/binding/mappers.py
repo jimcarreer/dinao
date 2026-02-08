@@ -12,6 +12,7 @@ from dinao.binding.errors import TooManyValuesError
 
 TUPLE_GENERICS = [tuple, typing.Tuple]
 GENERATOR_GENERICS = [collections.abc.Generator, typing.Generator]
+ASYNC_GENERATOR_GENERICS = [collections.abc.AsyncGenerator, typing.AsyncGenerator]
 DICT_GENERICS = [dict, typing.Dict, typing.Mapping, collections.abc.Mapping]
 LIST_GENERICS = [list, typing.List, typing.Iterable, collections.abc.Sequence, collections.abc.Iterable]
 NATIVE_SINGLE = [str, int, float, complex, bool, datetime, UUID]

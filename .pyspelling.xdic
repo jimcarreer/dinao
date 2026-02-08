@@ -1,6 +1,11 @@
 abc
 abspath
 abstractmethod
+async
+asynccontextmanager
+asyncio
+awaitable
+awaitables
 alphanums
 api
 arg
@@ -23,6 +28,8 @@ concat
 conn
 contextlib
 contextmanager
+contextvars
+contextvar
 dataclass
 dataclasses
 datetime
@@ -60,6 +67,7 @@ len
 localhost
 mappable
 mariadb
+mixin
 mariadbconnector
 maxconn
 minconn
@@ -113,6 +121,7 @@ sslmode
 sslrootcert
 staticmethod
 str
+subclasses
 templated
 templating
 tid

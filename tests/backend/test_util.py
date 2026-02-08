@@ -2,6 +2,7 @@
 
 from dinao.backend import create_connection_pool
 from dinao.backend.errors import ConfigurationError, UnsupportedBackendError
+from dinao.backend.postgres import AsyncConnectionPoolPSQLPsycopg3, ConnectionPoolPSQLPsycopg3
 
 import pytest
 
@@ -47,9 +48,28 @@ import pytest
         ("mysql://user:pass@host:4444/", "name is required but missing", ConfigurationError),
         ("mysql://user:pass@host:4444/dbname?pool_size=-1", "must be greater than 0", ConfigurationError),
         ("mysql://user:pass@host:4444/dbname?pool_name=", "cannot be an empty string", ConfigurationError),
+        ("postgresql+psycopg2+async://user:pass@host:4444/dbname", "does not support async", UnsupportedBackendError),
+        ("sqlite3+none+async://test.db", "not supported", UnsupportedBackendError),
+        (
+            "mariadb+mariadbconnector+async://user:pass@host:4444/dbname",
+            "does not support async",
+            UnsupportedBackendError,
+        ),
+        ("mysql+mysqlconnector+async://user:pass@host:4444/dbname", "does not support async", UnsupportedBackendError),
+        ("postgresql+psycopg+bogus://user:pass@host:4444/dbname", "Invalid mode", ConfigurationError),
+        ("postgresql+psycopg+a+b://user:pass@host:4444/dbname", "too many components", ConfigurationError),
     ],
 )
 def test_backend_create_rejection(db_uri: str, match: str, except_class):
     """Tests bad db_url are rejected by create_connection_pool."""
     with pytest.raises(except_class, match=match):
         create_connection_pool(db_uri)
+
+
+def test_async_pool_creation():
+    """Tests that async URL mode creates the correct pool type."""
+    pool = create_connection_pool("postgresql+psycopg+async://user:pass@host:5432/dbname")
+    assert isinstance(pool, AsyncConnectionPoolPSQLPsycopg3)
+    # Sync mode should create the sync pool
+    pool2 = create_connection_pool("postgresql+psycopg+sync://user:pass@host:5432/dbname")
+    assert isinstance(pool2, ConnectionPoolPSQLPsycopg3)
