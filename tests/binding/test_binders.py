@@ -29,34 +29,34 @@ def test_basic_bindings(binder_and_pool: Tuple[FunctionBinder, MockConnectionPoo
     binder, pool = binder_and_pool
 
     @binder.execute("INSERT INTO table VALUES (#{arg1}, #{arg2}, #{arg3}) ON CONFLICT DO NOTHING")
-    def bounded_insert(arg1: str, arg2: str, arg3: str = "test") -> int:
+    def bound_insert(arg1: str, arg2: str, arg3: str = "test") -> int:
         pass  # pragma: no cover
 
     @binder.query("SELECT some_num FROM table WHERE name = #{arg1.name}")
-    def bounded_select(arg1: dict):
+    def bound_select(arg1: dict):
         pass  # pragma: no cover
 
     @binder.query("INSERT INTO some_other_table VALES (#{arg1})")
-    def bounded_query_returns_none(arg1: str) -> None:
+    def bound_query_returns_none(arg1: str) -> None:
         pass  # pragma: no cover
 
     @binder.execute("UPDATE some_table SET some_value = #{arg2} WHERE some_name = #{arg1}")
-    def bounded_update(arg1: str, arg2: int) -> None:
+    def bound_update(arg1: str, arg2: int) -> None:
         pass  # pragma: no cover
 
     @binder.transaction()
-    def bounded_transaction(param: str) -> int:
-        bounded_insert("test1", "test2", param)
+    def bound_transaction(param: str) -> int:
+        bound_insert("test1", "test2", param)
         stats = 0
-        for x in bounded_select({"name": param}):
+        for x in bound_select({"name": param}):
             stats += x[0]
-        bounded_update(param, stats)
+        bound_update(param, stats)
         return stats
 
-    assert bounded_insert("one", "two", "three") == 1
-    assert bounded_insert("one", "two") == 0
-    assert bounded_query_returns_none("some_value") is None
-    assert bounded_transaction("testing") == 6
+    assert bound_insert("one", "two", "three") == 1
+    assert bound_insert("one", "two") == 0
+    assert bound_query_returns_none("some_value") is None
+    assert bound_transaction("testing") == 6
     assert len(pool.connection_stack) == 4
 
     cnx: MockConnection = pool.connection_stack.pop(0)

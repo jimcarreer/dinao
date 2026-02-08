@@ -50,7 +50,7 @@ class BadReturnTypeError(SignatureError):
 
 
 class MissingTemplateArgumentError(SignatureError):
-    """Raised when a template specifies an argument not found in its bounded function's signature."""
+    """Raised when a template specifies an argument not found in its bound function's signature."""
 
     pass
 

@@ -55,7 +55,7 @@ class ConnectionPoolMySQL(ConnectionPool):
         try:
             from mysql.connector.pooling import MySQLConnectionPool
         except ModuleNotFoundError:  # pragma: no cover
-            issue = "Module mariadb not installed, cannot create connection pool"
+            issue = "Module mysql-connector-python not installed, cannot create connection pool"
             raise BackendNotInstalledError(issue)
         self._pool_kwargs = self._make_cnx_kwargs()
         self._raise_for_unexpected_args()

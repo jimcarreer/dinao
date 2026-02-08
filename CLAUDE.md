@@ -19,7 +19,16 @@ Before starting any new feature or bug fix, perform these steps:
 
 ## Common Commands
 
+### Enabling Local Environment
+
+**Important**: When running tests or quality jobs, always enable the local python environment for this project first.
+
+```bash
+source ./.venv/bin/activate
+```
+
 ### Testing
+
 ```bash
 # Run all tests (requires docker containers for integration tests)
 pytest

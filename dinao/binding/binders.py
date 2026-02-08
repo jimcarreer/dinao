@@ -59,9 +59,9 @@ class FunctionBinder:
         raise exc.with_traceback(None) from exc
 
     def _raise_for_multi_binding(self, func: callable):
-        if isinstance(func, BoundedFunction):
-            name = func.bounded_function.__name__
-            error = f"The function {name} has already been bounded by {func}"
+        if isinstance(func, BoundFunction):
+            name = func.bound_function.__name__
+            error = f"The function {name} has already been bound by {func}"
             self._suppressed_raise(FunctionAlreadyBoundError(error))
 
     def _make_template(self, sql: str):
@@ -96,7 +96,8 @@ class FunctionBinder:
         """Binds a given function to a given SQL template.
 
         .. warning::
-            The execution of the SQL given is not expected to return results / rows. Use the
+            The execution of the SQL given is not expected to return results / rows. Use the ``query``
+            decorator for SQL that returns rows.
 
         .. note::
             The return type of the decorated / bound function may return an int, which will make it return the number of
@@ -105,7 +106,7 @@ class FunctionBinder:
         Example::
 
             @binder.execute("INSERT INTO my_table (col1, col2) VALUES (#{arg1.some_key_or_member}, #{arg2})")
-            def my_bounded_func(arg1: dict, arg2: str) -> int:
+            def my_bound_func(arg1: dict, arg2: str) -> int:
                 pass
 
         :param sql: a SQL template to bind the function execution to
@@ -116,27 +117,28 @@ class FunctionBinder:
         def decorated(func: callable):
             self._raise_for_multi_binding(func)
             template = self._make_template(sql)
-            return BoundedExecution(self, template, func)
+            return BoundExecution(self, template, func)
         return decorated
         # fmt: on
 
     def query(self, sql: str) -> callable:
         """Binds a given function to a given SQL template.
 
-        .. warning::
-            Currently return type mapping is not implemented if the return type specified on the bounded function is not
-            either empty or None a NotImplementedError is raised.  A list of tuples is returned when the return hint is
-            left empty, representing the results from the query.
+        The return type annotation of the bound function determines how query results are mapped. Supported return
+        types include: bare classes and dataclasses (single row), ``Optional[X]`` (single row or None),
+        ``List[X]`` (multiple rows), ``dict`` (single row as dict), ``Generator[X, None, None]`` (streaming rows),
+        and native types like ``str``, ``int``, etc. (single column value). If no return type is specified, the
+        default is ``List[tuple]``.
 
         Example::
 
-            @binder.query("SELECT * INTO my_table WHERE col_1 = #{arg1.some_key_or_member} AND col_2 = #{arg2}")
-            def my_bounded_func(arg1: dict, arg2: str):
+            @binder.query("SELECT * FROM my_table WHERE col_1 = #{arg1.some_key_or_member} AND col_2 = #{arg2}")
+            def my_bound_func(arg1: dict, arg2: str):
                 pass
 
         :param sql: a SQL template to bind the function execution to
         :returns: a decorator expecting a callable
-        :raises: NotImplementedError, FunctionAlreadyBoundError
+        :raises: CannotInferMappingError, FunctionAlreadyBoundError
         """
         # fmt: off
         def decorated(func: callable):
@@ -144,27 +146,27 @@ class FunctionBinder:
             template = self._make_template(sql)
             return_type = typing.get_origin(inspect.signature(func).return_annotation)
             if return_type in GENERATOR_GENERICS:
-                return BoundedGeneratingQuery(self, template, func)
-            return BoundedQuery(self, template, func)
+                return BoundGeneratingQuery(self, template, func)
+            return BoundQuery(self, template, func)
         return decorated
         # fmt: on
 
     def transaction(self):
         """Binds a given function to a given SQL transaction.
 
-        All bounded function called during the call of a function bounded in this way will use the same transaction /
+        All bound functions called during the call of a function bound in this way will use the same transaction /
         connection.
 
         Example::
 
-            @binder.query("SELECT * INTO my_table WHERE col_1 = #{arg1.some_key_or_member} AND col_2 = #{arg2}")
+            @binder.query("SELECT * FROM my_table WHERE col_1 = #{arg1.some_key_or_member} AND col_2 = #{arg2}")
             def my_select(arg1: dict, arg2: str):
                 pass
 
             @binder.execute(
                 "INSERT INTO stats_table VALUES "
-                "(#{stats.name}, #{stats.value}) "
-                "ON CONFLICT (name) DO UPDATE SET value = #{stats.value}"
+                "(#{stat.name}, #{stat.value}) "
+                "ON CONFLICT (name) DO UPDATE SET value = #{stat.value}"
             )
             def my_update(stat: dict) -> int:
                 pass
@@ -172,24 +174,24 @@ class FunctionBinder:
             @binder.transaction()
             def my_transaction(arg1: dict, stat_name: str) -> int:
                 my_table_results = my_select(arg1, stat_name)
-                stat = {"name": stat, "value": 0}
+                stat = {"name": stat_name, "value": 0}
                 for row in my_table_results:
                     stat["value"] += row[0]
                 return my_update(stat=stat)
 
         :returns: a decorator expecting a callable
-        :raises: NotImplementedError, FunctionAlreadyBoundError
+        :raises: MultipleConnectionArgumentError, FunctionAlreadyBoundError
         """
         # fmt: off
         def decorated(func: callable):
             self._raise_for_multi_binding(func)
-            return BoundedTransaction(self, func)
+            return BoundTransaction(self, func)
         return decorated
         # fmt: on
 
     @contextmanager
     def connection(self) -> Generator[Connection | None | Any, Any, None]:
-        """Context manger for database connections used by bound functions.
+        """Context manager for database connections used by bound functions.
 
         An active connection will be kept and yielded, provided to all contexts within the context that initially asked
         for it.
@@ -221,7 +223,7 @@ class FunctionBinder:
             self._context_store.active_cnx = None
 
 
-class BoundedFunction(ABC):
+class BoundFunction(ABC):
     """Abstract class for common behaviors between bound functions."""
 
     def __init__(self, binder: FunctionBinder, func: callable):  # noqa: D107
@@ -234,12 +236,12 @@ class BoundedFunction(ABC):
         pass  # pragma: no cover
 
     @property
-    def bounded_function(self) -> callable:
+    def bound_function(self) -> callable:
         """Return the original callable this object binds."""
         return self._func
 
 
-class BoundedSQLFunction(BoundedFunction):
+class BoundSQLFunction(BoundFunction):
     """Abstract class for common behaviors between functions bound to templated SQL."""
 
     def __init__(self, binder: FunctionBinder, sql_template: Template, func: callable):  # noqa: D107
@@ -252,15 +254,15 @@ class BoundedSQLFunction(BoundedFunction):
 
     def __str__(self) -> str:
         """Return a simple representation of a SQL bound function."""
-        return f"{self.__class__.__name__} of {self._sql_template} ({self.bounded_function.__name__})"
+        return f"{self.__class__.__name__} of {self._sql_template} ({self.bound_function.__name__})"
 
     @abstractmethod
     def __call__(self, *args, **kwargs):  # noqa: D102
         pass  # pragma: no cover
 
 
-class BoundedQuery(BoundedSQLFunction):
-    """Implementation of a bounded function that represents a SQL query that returns rows."""
+class BoundQuery(BoundSQLFunction):
+    """Implementation of a bound function that represents a SQL query that returns rows."""
 
     def __init__(self, binder: FunctionBinder, sql_template: Template, func: callable, row_mapper: RowMapper = None):
         """Construct a BoundSQLFunction that returns result sets.
@@ -329,8 +331,8 @@ class BoundedQuery(BoundedSQLFunction):
     def __call__(self, *args, **kwargs):
         """Execute the templated SQL as a query with results.
 
-        :param args: the positional arguments of the bounded / decorated function
-        :param kwargs: the keyword arguments of the bounded / decorated function
+        :param args: the positional arguments of the bound / decorated function
+        :param kwargs: the keyword arguments of the bound / decorated function
         """
         bound = self._sig.bind(*args, **kwargs)
         bound.apply_defaults()
@@ -340,11 +342,11 @@ class BoundedQuery(BoundedSQLFunction):
                 return self._return_impl(results)
 
 
-class BoundedGeneratingQuery(BoundedSQLFunction):
-    """Implementation of a bounded function that represents a SQL query that returns rows via a generator."""
+class BoundGeneratingQuery(BoundSQLFunction):
+    """Implementation of a bound function that represents a SQL query that returns rows via a generator."""
 
     def __init__(self, binder: FunctionBinder, sql_template: Template, func: callable, row_mapper: RowMapper = None):
-        """Construct a BoundedGeneratingQuery that returns result sets.
+        """Construct a BoundGeneratingQuery that returns result sets.
 
         :param binder: the binder to which this bound function belongs
         :param sql_template: the template to use for resolving SQL parameters / munged sql.
@@ -368,8 +370,8 @@ class BoundedGeneratingQuery(BoundedSQLFunction):
     def __call__(self, *args, **kwargs):
         """Execute the templated SQL as a query with results.
 
-        :param args: the positional arguments of the bounded / decorated function
-        :param kwargs: the keyword arguments of the bounded / decorated function
+        :param args: the positional arguments of the bound / decorated function
+        :param kwargs: the keyword arguments of the bound / decorated function
         """
         bound = self._sig.bind(*args, **kwargs)
         bound.apply_defaults()
@@ -382,8 +384,8 @@ class BoundedGeneratingQuery(BoundedSQLFunction):
                     row = results.fetchone()
 
 
-class BoundedExecution(BoundedSQLFunction):
-    """Implementation of a bounded function that represents a SQL query that does not return rows."""
+class BoundExecution(BoundSQLFunction):
+    """Implementation of a bound function that represents a SQL query that does not return rows."""
 
     def __init__(self, binder: FunctionBinder, sql_template: Template, func: callable):
         """Construct a BoundSQLFunction that returns no results.
@@ -404,8 +406,8 @@ class BoundedExecution(BoundedSQLFunction):
     def __call__(self, *args, **kwargs):
         """Execute the templated SQL as a query without results.
 
-        :param args: the positional arguments of the bounded / decorated function
-        :param kwargs: the keyword arguments of the bounded / decorated function
+        :param args: the positional arguments of the bound / decorated function
+        :param kwargs: the keyword arguments of the bound / decorated function
         """
         bound = self._sig.bind(*args, **kwargs)
         bound.apply_defaults()
@@ -415,14 +417,14 @@ class BoundedExecution(BoundedSQLFunction):
             return None if self._returns_none else affected
 
 
-class BoundedTransaction(BoundedFunction):
-    """Implementation of a bounded function whose call is done within a database transaction."""
+class BoundTransaction(BoundFunction):
+    """Implementation of a bound function whose call is done within a database transaction."""
 
     def __init__(self, binder: FunctionBinder, func: callable):
         """Construct a BoundFunction that represents a transaction.
 
         :param binder: the binder to which this bound function belongs
-        :param func: the callable being bound to the given SQL
+        :param func: the callable to be executed within a transaction
 
         :raises: MultipleConnectionArgumentError
         """
@@ -431,19 +433,19 @@ class BoundedTransaction(BoundedFunction):
         for name in self._sig.parameters:
             if issubclass(self._sig.parameters[name].annotation, Connection):
                 if self._cnx_arg_name is not None:
-                    error = f"Connection argument specified multiple times for {self.bounded_function.__name__}"
+                    error = f"Connection argument specified multiple times for {self.bound_function.__name__}"
                     raise MultipleConnectionArgumentError(error)
                 self._cnx_arg_name = name
 
     def __str__(self) -> str:
         """Return a simple representation of a transaction bound function."""
-        return f"{self.__class__.__name__} ({self.bounded_function.__name__})"
+        return f"{self.__class__.__name__} ({self.bound_function.__name__})"
 
     def __call__(self, *args, **kwargs):
         """Execute the decorated / bound function with a single database connection / transaction.
 
-        :param args: the positional arguments of the bounded / decorated function
-        :param kwargs: the keyword arguments of the bounded / decorated function
+        :param args: the positional arguments of the bound / decorated function
+        :param kwargs: the keyword arguments of the bound / decorated function
         """
         with self._binder.connection() as cnx:
             cnx.autocommit = False
