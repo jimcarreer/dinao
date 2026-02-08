@@ -1,5 +1,6 @@
 abc
 abspath
+aiohttp
 abstractmethod
 async
 asynccontextmanager
@@ -18,6 +19,7 @@ backends
 batis
 bool
 boolean
+coroutine
 classmethod
 closeall
 cls
@@ -63,6 +65,7 @@ json
 jsonify
 kwarg
 kwargs
+lifecycle
 len
 localhost
 mappable
@@ -116,6 +119,8 @@ sigterm
 socio
 sql
 sqlite
+starlette
+stdlib
 ssl
 sslmode
 sslrootcert
