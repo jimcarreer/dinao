@@ -8,6 +8,15 @@ DINAO (Database Is Not An ORM) is a Python library for simple database access wi
 directly; DINAO provides function binding via decorators, automatic result mapping to Python types, and connection 
 pooling. Supports multiple relation database backends
 
+## Preflight Checks for New Feature Work
+
+Before starting any new feature or bug fix, perform these steps:
+
+1. Ensure you are on the `main` branch (`git branch --show-current`)
+2. Ensure `main` is up-to-date with the remote (`git fetch origin && git
+   diff main origin/main`)
+3. Create (or checkout) a feature branch for the new work
+
 ## Common Commands
 
 ### Testing
@@ -64,6 +73,7 @@ pip install -e ".[dev]"
       backend
   - Large functions and loop bodies should generally be broken up into smaller functions where applicable to help with
     context window sizes on specific tasks, and to help with readability.
+  - When a new engine / database / backend is added, the backend documentation should be updated accordingly.
 
 ## Architecture
 
@@ -77,10 +87,11 @@ pip install -e ".[dev]"
     ```
     # Original file
     backend/postgres.py
-    # Ne structure
+    # New structure
     backend/postres/
     backend/postgres/__init__.py
-    
+    backend/postgres/pyscopg2.py
+    backend/postgres/pyscogp3.py
     ```
 - `create_connection_pool(url)` factory in `__init__.py` selects backend from URL scheme 
   (e.g. `postgresql+psycopg2://...`)
