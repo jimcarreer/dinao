@@ -54,6 +54,8 @@ jobs:
         run: pytest
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
 
   preview_publish:
     needs: [quality, testing]
