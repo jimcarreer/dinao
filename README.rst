@@ -61,17 +61,18 @@ DINAO focuses binding functions to scoped connections / transactions against
 the database and using function signatures and type hinting to infer mapping
 and query parameterization.
 
-Below shows a simple example of DINAO usage. For more comprehensive usage and
-feature showcase see `examples`_.
+Below shows a simple example of DINAO usage with async PostgreSQL. For more
+comprehensive usage and feature showcase see `examples`_.
 
 .. code-block:: python
 
+    import asyncio
     from typing import List
     from dataclasses import dataclass
-    from dinao.backend import create_connection_pool, Connection
-    from dinao.binding import FunctionBinder
+    from dinao.backend import create_connection_pool, AsyncConnection
+    from dinao.binding import AsyncFunctionBinder
 
-    binder = FunctionBinder()
+    binder = AsyncFunctionBinder()
 
     @dataclass
     class MyModel:
@@ -84,51 +85,67 @@ feature showcase see `examples`_.
         "  value INTEGER DEFAULT 0"
         ")"
     )
-    def make_table():
+    async def make_table():
         pass
 
 
     @binder.execute(
-        "INSERT INTO my_table (name, value) VALUES(#{model.name}, #{model.value}) "
+        "INSERT INTO my_table (name, value) "
+        "VALUES(#{model.name}, #{model.value}) "
         "ON CONFLICT (name) DO UPDATE "
         "  SET value = #{model.value} "
         "WHERE my_table.name = #{model.name}"
     )
-    def upsert(model: MyModel) -> int:
+    async def upsert(model: MyModel) -> int:
         pass
 
 
-    # This is an example of a query where a template variable is directly
-    # replaced in a template.  This is via a template argument denoted with
-    # !{column_name}.  The #{search_term} on the other hand uses proper
-    # escaping and parameterization in the underlying SQL engine.
+    # This is an example of a query where a template variable is
+    # directly replaced in a template.  This is via a template
+    # argument denoted with !{column_name}.  The #{search_term} on
+    # the other hand uses proper escaping and parameterization in the
+    # underlying SQL engine.
     #
-    # IMPORTANT: This is a vector for SQL Injection, do not use direct template
-    #            replacement on untrusted inputs, especially those coming from
-    #            users.  Ensure that you validate, restrict, or otherwise limit
-    #            the values that can be used in direct template replacement.
+    # IMPORTANT: This is a vector for SQL Injection, do not use
+    #            direct template replacement on untrusted inputs,
+    #            especially those coming from users.  Ensure that you
+    #            validate, restrict, or otherwise limit the values
+    #            that can be used in direct template replacement.
     #
-    @binder.query("SELECT name, value FROM my_table WHERE !{column_name} LIKE #{search_term}")
-    def search(column_name: str, search_term: str) -> List[MyModel]:
+    @binder.query(
+        "SELECT name, value FROM my_table "
+        "WHERE !{column_name} LIKE #{search_term}"
+    )
+    async def search(
+        column_name: str, search_term: str
+    ) -> List[MyModel]:
         pass
 
 
     @binder.transaction()
-    def populate(cnx: Connection = None):
-        make_table()
-        cnx.commit()
-        upsert(MyModel("testing", 52))
-        upsert(MyModel("test", 39))
-        upsert(MyModel("other_thing", 20))
+    async def populate(cnx: AsyncConnection = None):
+        await make_table()
+        await cnx.commit()
+        await upsert(MyModel("testing", 52))
+        await upsert(MyModel("test", 39))
+        await upsert(MyModel("other_thing", 20))
+
+
+    async def main():
+        con_url = (
+            "postgresql+psycopg+async://"
+            "user:pass@localhost:5432/mydb"
+        )
+        db_pool = create_connection_pool(con_url)
+        binder.pool = db_pool
+        await populate()
+        for model in await search("name", "test%"):
+            print(f"{model.name}: {model.value}")
+        await db_pool.dispose()
 
 
     if __name__ == '__main__':
-        con_url = "sqlite3:///tmp/example.db"
-        db_pool = create_connection_pool(con_url)
-        binder.pool = db_pool
-        populate()
-        for model in search("name", "test%"):
-            print(f"{model.name}: {model.value}")
+        asyncio.run(main())
 
 Contributing
 ------------

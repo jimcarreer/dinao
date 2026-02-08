@@ -1,5 +1,7 @@
 """Defines common errors raised from function binding."""
 
+from dinao.backend.errors import AsyncPoolRequiredError  # noqa: F401
+
 
 class NoPoolSetError(Exception):
     """Raised when there is no pool set for a function binder before a sql operation is called."""

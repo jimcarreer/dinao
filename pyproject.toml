@@ -30,6 +30,7 @@ dependencies = [
 [project.optional-dependencies]
 tests = [
     "pytest",
+    "pytest-asyncio",
     "pytest-cov",
     "psycopg2-binary",
     "psycopg[binary]",

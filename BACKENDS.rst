@@ -11,6 +11,46 @@ identifies the Python library used to connect.  If the driver is
 omitted, a default driver is used (where applicable).  Additional
 options can be appended as query string parameters.
 
+Async mode can be enabled by appending ``+async`` to the driver in
+the URL scheme::
+
+    {backend}+{driver}+async://{user}:{password}@{host}:{port}/{db_name}
+
+See the `Async Usage`_ section below for details on how to use
+async backends with ``AsyncFunctionBinder``.
+
+Support Matrix
+--------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 25 10 10
+
+   * - Backend
+     - Engine (driver)
+     - Sync
+     - Async
+   * - SQLite3
+     - ``sqlite3`` (stdlib)
+     - Yes
+     - No
+   * - PostgreSQL
+     - ``psycopg2``
+     - Yes
+     - No
+   * - PostgreSQL
+     - ``psycopg`` (v3)
+     - Yes
+     - Yes
+   * - MariaDB
+     - ``mariadbconnector``
+     - Yes
+     - No
+   * - MySQL
+     - ``mysqlconnector``
+     - Yes
+     - No
+
 SQLite3
 -------
 
@@ -158,17 +198,26 @@ psycopg (v3)
 :Driver: `psycopg <https://pypi.org/project/psycopg/>`_ and
   `psycopg-pool <https://pypi.org/project/psycopg-pool/>`_
 :Install: ``pip install psycopg psycopg-pool``
+:Async: Yes (append ``+async`` to the driver)
 
 URL Format
 ^^^^^^^^^^
 
-::
+Synchronous::
 
     postgresql+psycopg://{user}:{password}@{host}:{port}/{db_name}?{options}
+
+Asynchronous::
+
+    postgresql+psycopg+async://{user}:{password}@{host}:{port}/{db_name}?{options}
 
 The psycopg (v3) driver supports the common PostgreSQL optional
 arguments listed above.  Unlike psycopg2, this driver does not
 have a ``pool_threaded`` option.
+
+The async variant returns an ``AsyncConnectionPool`` which is
+required by ``AsyncFunctionBinder``.  See the `Async Usage`_
+section for a full example.
 
 Examples
 ^^^^^^^^
@@ -177,14 +226,21 @@ Examples
 
     from dinao.backend import create_connection_pool
 
-    # Basic connection
+    # Basic synchronous connection
     pool = create_connection_pool(
         "postgresql+psycopg://myuser:mypass@localhost:5432/mydb"
     )
 
-    # With connection pool sizing
+    # Basic asynchronous connection
     pool = create_connection_pool(
-        "postgresql+psycopg://myuser:mypass@localhost:5432/mydb"
+        "postgresql+psycopg+async://myuser:mypass"
+        "@localhost:5432/mydb"
+    )
+
+    # Async with connection pool sizing
+    pool = create_connection_pool(
+        "postgresql+psycopg+async://myuser:mypass"
+        "@localhost:5432/mydb"
         "?pool_min_conn=2&pool_max_conn=10"
     )
 
@@ -325,3 +381,120 @@ Examples
         "?ssl_ca=/etc/ssl/certs/db-ca.pem"
         "&ssl_verify_cert=true"
     )
+
+Async Usage
+-----------
+
+DINAO supports asynchronous database access via
+``AsyncFunctionBinder``.  Async support requires a backend that
+provides an ``AsyncConnectionPool``; currently only the PostgreSQL
+``psycopg`` (v3) driver supports this (see the `Support Matrix`_
+above).
+
+Async mode is enabled by appending ``+async`` to the driver
+portion of the connection URL.  ``AsyncFunctionBinder`` uses
+``contextvars.ContextVar`` (instead of ``threading.local``) for
+connection storage, making it safe for use with ``asyncio`` and
+frameworks such as FastAPI, Starlette, and aiohttp.
+
+Setting Up
+**********
+
+Create an ``AsyncFunctionBinder`` instance and assign an async
+connection pool to it:
+
+.. code-block:: python
+
+    from dinao.backend import create_connection_pool
+    from dinao.binding import AsyncFunctionBinder
+
+    binder = AsyncFunctionBinder()
+
+    pool = create_connection_pool(
+        "postgresql+psycopg+async://myuser:mypass"
+        "@localhost:5432/mydb"
+    )
+    binder.pool = pool
+
+.. note::
+
+    ``AsyncFunctionBinder`` validates that the pool is an
+    ``AsyncConnectionPool``.  Passing a synchronous pool raises
+    ``AsyncPoolRequiredError``.
+
+Binding Functions
+*****************
+
+The ``@binder.query``, ``@binder.execute``, and
+``@binder.transaction`` decorators work the same way as their
+synchronous counterparts, but the decorated functions must be
+``async``:
+
+.. code-block:: python
+
+    from dataclasses import dataclass
+
+    @dataclass
+    class User:
+        id: int
+        name: str
+
+    @binder.execute(
+        "INSERT INTO users (name) VALUES (#{name})"
+    )
+    async def create_user(name: str) -> int:
+        pass
+
+    @binder.query(
+        "SELECT id, name FROM users WHERE id = #{user_id}"
+    )
+    async def get_user(user_id: int) -> User:
+        pass
+
+    @binder.query(
+        "SELECT id, name FROM users"
+    )
+    async def list_users() -> list[User]:
+        pass
+
+    @binder.transaction()
+    async def create_and_get(name: str) -> User:
+        await create_user(name=name)
+        return await get_user(user_id=1)
+
+Calling bound async functions requires ``await``:
+
+.. code-block:: python
+
+    user = await get_user(user_id=42)
+    users = await list_users()
+    rows = await create_user(name="Alice")
+
+Async Generators
+****************
+
+For streaming large result sets, use an ``AsyncGenerator`` return
+type annotation:
+
+.. code-block:: python
+
+    from typing import AsyncGenerator
+
+    @binder.query(
+        "SELECT id, name FROM users"
+    )
+    async def stream_users() -> AsyncGenerator[User, None]:
+        pass
+
+    async for user in stream_users():
+        print(user.name)
+
+Pool Lifecycle
+**************
+
+Async connection pools should be disposed of when the application
+shuts down.  The ``dispose`` method on the pool is a coroutine:
+
+.. code-block:: python
+
+    await pool.dispose()

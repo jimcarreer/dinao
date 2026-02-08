@@ -57,6 +57,27 @@ def tmp_psycopg3_db_url(rand_db_name) -> Generator[str, Any, None]:
 
 
 @pytest.fixture()
+def tmp_psycopg3_async_db_url(rand_db_name) -> Generator[str, Any, None]:
+    """Provide a DB Connection Pool URL for the test postgres instance using psycopg (v3) in async mode."""
+    import psycopg
+    from tests.backend import postgres_test_sql as test_sql
+
+    database = os.environ.get("DINAO_TEST_PSQL_DB", "postgres")
+    hostname = os.environ.get("DINAO_TEST_PSQL_HOST", "127.0.0.1")
+    username = os.environ.get("DINAO_TEST_PSQL_USER", "psql_test_user")
+    password = os.environ.get("DINAO_TEST_PSQL_PASS", "psql_test_pass")
+    port = int(os.getenv("DINAO_TEST_PSQL_PORT", 15432))
+    cnx = psycopg.connect(dbname=database, user=username, password=password, host=hostname, port=port, autocommit=True)
+    cursor = cnx.cursor()
+    cursor.execute(f"CREATE DATABASE {rand_db_name}")
+    yield f"postgresql+psycopg+async://{username}:{password}@{hostname}:{port}/{rand_db_name}"
+    cursor.execute(test_sql.TERMINATE_DB_CONNS, (rand_db_name,))
+    cursor.execute(f"DROP DATABASE {rand_db_name}")
+    cursor.close()
+    cnx.close()
+
+
+@pytest.fixture()
 def tmp_maria_db_url(rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test mariadb instance."""
     import mariadb

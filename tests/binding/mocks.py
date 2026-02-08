@@ -1,9 +1,16 @@
 """Mock implementations of Database interface for use in testing binding and mapping functionality."""
 
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from typing import Any, Generator, List, Optional, Tuple, Union
 
-from dinao.backend.base import Connection, ConnectionPool, ResultSet
+from dinao.backend.base import (
+    AsyncConnection,
+    AsyncConnectionPool,
+    ColumnDescriptor,
+    Connection,
+    ConnectionPool,
+    ResultSet,
+)
 
 
 class MockDMLCursor:
@@ -164,4 +171,122 @@ class MockConnectionPool(ConnectionPool):
                 cnx.released = True
 
     def dispose(self):  # noqa: D102
+        self.disposed += 1
+
+
+class MockAsyncResultSet:
+    """Mock async result set that wraps sync mock cursors for testing."""
+
+    def __init__(self, cursor):
+        """Construct a mock async result set.
+
+        :param cursor: a sync mock cursor to wrap
+        """
+        self._cursor = cursor
+        self._description = None
+
+    async def fetchone(self) -> Tuple:
+        """Fetch one result tuple from the underlying cursor."""
+        return self._cursor.fetchone()
+
+    async def fetchall(self) -> List[Tuple]:
+        """Fetch the remaining result tuples from the underlying cursor."""
+        return self._cursor.fetchall()
+
+    @property
+    def description(self) -> Tuple:
+        """Return a sequence of column descriptions representing the result set."""
+        if not self._description:
+            self._description = tuple([ColumnDescriptor(*(d[0:7])) for d in self._cursor.description])
+        return self._description
+
+    @property
+    def rowcount(self) -> int:
+        """Return the row count of the result set."""
+        return self._cursor.rowcount
+
+
+class AsyncMockConnection(AsyncConnection):
+    """Mock implementation of the AsyncConnection interface for use in testing."""
+
+    def __init__(self, cursor_stack: List[Union[MockDMLCursor, MockDQLCursor]]):
+        """Construct an async mock connection.
+
+        :param cursor_stack: a list of mock cursors to return from calls to query() and execute()
+        """
+        super().__init__(cnx=None)
+        self.query_stack = []
+        self.released = False
+        self.committed = 0
+        self.rollbacks = 0
+        self.executions = 0
+        self.queries = 0
+        self.cursor_stack = cursor_stack
+
+    async def commit(self):  # noqa: D102
+        self.committed += 1
+
+    async def rollback(self):  # noqa: D102
+        self.rollbacks += 1
+
+    @asynccontextmanager
+    async def query(self, sql: str, params: tuple = None):  # noqa: D102
+        self.query_stack.append((sql, params))
+        self.queries += 1
+        if self.autocommit:
+            await self.commit()
+        if not self.cursor_stack:  # pragma: no cover
+            msg = f"Mocked results exhausted: query(sql={sql}, params={params}), call number {self.queries}"
+            raise Exception(msg)
+        results = MockAsyncResultSet(cursor=self.cursor_stack.pop(0))
+        yield results
+
+    async def execute(self, sql: str, params: tuple = None, commit: bool = None) -> int:  # noqa: D102
+        self.query_stack.append((sql, params))
+        commit = commit if commit is not None else self._auto_commit
+        if commit:
+            await self.commit()
+        self.executions += 1
+        if not self.cursor_stack:  # pragma: no cover
+            msg = f"Mocked results exhausted: execute(sql={sql}, params={params}), call number {self.executions}"
+            raise Exception(msg)
+        results = MockAsyncResultSet(cursor=self.cursor_stack.pop(0))
+        return results.rowcount
+
+    def assert_clean(self):  # noqa: D102
+        assert self.released, "Connection never released"
+        assert self.committed > 0, "Connection did not have commit called"
+
+    async def _execute(self, cursor, sql: str, params: tuple = None):
+        pass  # pragma: no cover
+
+
+class AsyncMockConnectionPool(AsyncConnectionPool):
+    """Mock implementation of the AsyncConnectionPool interface for use in testing."""
+
+    def __init__(self, cursor_stack: List[Union[MockDMLCursor, MockDQLCursor]]):
+        """Construct an async mock connection pool.
+
+        :param cursor_stack: a list of mock results to return from calls to query() and execute()
+        """
+        super().__init__("mock://user:pass@hostname/dbname?schema=schema")
+        self.connection_stack = []
+        self.cursor_stack = cursor_stack
+        self.disposed = 0
+
+    @property
+    def mung_symbol(self) -> str:  # noqa: D102
+        return "%s"
+
+    async def lease(self) -> AsyncMockConnection:  # noqa: D102
+        cnx = AsyncMockConnection(self.cursor_stack)
+        self.connection_stack.append(cnx)
+        return cnx
+
+    async def release(self, cnx: AsyncMockConnection):  # noqa: D102
+        for known_cnx in self.connection_stack:
+            if cnx == known_cnx:
+                cnx.released = True
+
+    async def dispose(self):  # noqa: D102
         self.disposed += 1
