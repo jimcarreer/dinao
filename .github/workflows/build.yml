@@ -51,6 +51,39 @@ jobs:
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
 
+  preview_publish:
+    needs: [quality, testing]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compute Preview Version
+        id: version
+        run: |
+          VERSION=$(python -c "from dinao.__version__ import __version__; print(__version__)")
+          if [[ "$VERSION" != *".dev"* ]]; then
+            echo "Version $VERSION is not a dev version, skipping preview"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          BASE_VERSION=$(echo "$VERSION" | sed 's/\.dev[0-9]*$//')
+          PREVIEW_VERSION="${BASE_VERSION}.dev${{github.run_number}}"
+          printf '# noqa: D100\n__version__ = "%s"\n' "${PREVIEW_VERSION}" > dinao/__version__.py
+          echo "Publishing preview version: ${PREVIEW_VERSION}"
+          echo "skip=false" >> $GITHUB_OUTPUT
+      - name: Build Preview
+        if: steps.version.outputs.skip != 'true'
+        run: pip install build && python -m build --sdist --wheel --outdir dist/
+      - name: Publish Preview to PyPI
+        if: steps.version.outputs.skip != 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{secrets.PYPI_API_TOKEN}}
+
   publish:
     needs: [quality, testing]
     if: startsWith(github.ref, 'refs/tags/')
