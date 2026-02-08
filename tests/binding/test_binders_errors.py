@@ -4,7 +4,7 @@ from typing import Generator, List, Tuple, Union
 
 from dinao.backend import Connection
 from dinao.binding import FunctionBinder
-from dinao.binding.binders import BoundedGeneratingQuery
+from dinao.binding.binders import BoundGeneratingQuery
 from dinao.binding.errors import (
     BadReturnTypeError,
     CannotInferMappingError,
@@ -58,15 +58,15 @@ def test_binding_generator_throws(binder_and_pool: Tuple[FunctionBinder, MockCon
             pass  # pragma: no cover
 
 
-def test_bounded_generating_query_throws(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
-    """Tests that BoundedGeneratingQuery raises if not bound to a generator."""
+def test_bound_generating_query_throws(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests that BoundGeneratingQuery raises if not bound to a generator."""
     binder, pool = binder_and_pool
 
     def not_a_generator() -> int:
         pass  # pragma: no cover
 
     with pytest.raises(BadReturnTypeError, match="Expected results type to be Generator"):
-        BoundedGeneratingQuery(binder, Template("SELECT * FROM table"), not_a_generator)
+        BoundGeneratingQuery(binder, Template("SELECT * FROM table"), not_a_generator)
 
 
 def test_binder_execute_bad_type(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
@@ -94,7 +94,7 @@ def test_binder_raises_for_template(binder_and_pool: Tuple[FunctionBinder, MockC
 def test_double_binding_raises(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
     """Tests that binding a function more than once results in an error."""
     binder, _ = binder_and_pool
-    match = "has already been bounded by"
+    match = "has already been bound by"
 
     with pytest.raises(FunctionAlreadyBoundError, match=match):
 
