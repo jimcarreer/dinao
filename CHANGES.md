@@ -1,6 +1,6 @@
 # Change Log
 
-## <NEXT VERSION>
+## NEXT VERSION PLACEHOLDER
 
 -   Placeholder for next version.
 
