@@ -220,7 +220,7 @@ class AsyncConnection(ConnectionBase):
         try:
             yield AsyncResultSet(cursor)
         finally:
-            cursor.close()
+            await cursor.close()
 
     async def execute(self, sql: str, params: tuple = None, commit: bool = None) -> int:
         """Execute the given SQL as a statement with the given parameters and return the affected row count.
@@ -235,7 +235,7 @@ class AsyncConnection(ConnectionBase):
         affected = cursor.rowcount
         if commit:
             await self.commit()
-        cursor.close()
+        await cursor.close()
         return affected
 
 
