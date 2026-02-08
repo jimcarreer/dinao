@@ -16,10 +16,14 @@ jobs:
           cache: pip
       - name: Install Aspell
         run: sudo apt-get install -y aspell aspell-en
-      - name: Install Tox
-        run: pip install tox
-      - name: Run QA checks
-        run: tox -e flake,spell,blacken
+      - name: Install Dependencies
+        run: pip install -e ".[lint]"
+      - name: Run Flake8gi
+        run: flake8 ./dinao/ ./tests/
+      - name: Run Black Check
+        run: black --check --diff ./dinao/ ./tests/
+      - name: Run Spell Check
+        run: pyspelling -v
 
   testing:
     name: Unit and Integration Testing
@@ -44,10 +48,10 @@ jobs:
         with:
           python-version: ${{matrix.python}}
           cache: pip
-      - name: Install Tox
-        run: pip install tox
+      - name: Install Dependencies
+        run: pip install -e ".[tests]"
       - name: Run Tests
-        run: tox -e py
+        run: pytest
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
 

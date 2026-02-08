@@ -48,12 +48,10 @@ docker compose -f tests/docker-compose.yaml up -d
 
 ### Linting & Formatting
 ```bash
-# Run all checks via tox
-tox -e flake,blacken,spell
-
-# Individual checks
+# Run all checks
 flake8 ./dinao/ ./tests/
 black --check --diff ./dinao/ ./tests/
+pyspelling -v
 
 # Auto-format with black
 black ./dinao/ ./tests/
