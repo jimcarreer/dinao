@@ -69,10 +69,25 @@ class ClassRowMapper(DictRowMapper):
 class SingleValueRowMapper(RowMapper):
     """Implements a row mapper for a primitive type."""
 
+    def __init__(self, mapped_type: typing.Type):
+        """Construct a single value row mapper that casts the result to the target type.
+
+        :param mapped_type: the primitive type to cast the result to
+        """
+        self._mapped_type = mapped_type
+
     def __call__(self, row: typing.Tuple, description: typing.Tuple[ColumnDescriptor, ...]):  # noqa: D102
         if len(row) > 1:
             raise TooManyValuesError(f"Too many values, expected 1, got {len(row)}")
-        return row[0]
+        value = row[0]
+        if value is None:
+            return None
+        if isinstance(value, self._mapped_type):
+            return value
+        # SQLite special case, we should consider better adapter handling
+        if self._mapped_type is datetime and isinstance(value, str):
+            return datetime.fromisoformat(value)
+        return self._mapped_type(value)
 
 
 def get_row_mapper(row_type: typing.Type) -> typing.Optional[RowMapper]:
@@ -92,7 +107,7 @@ def get_row_mapper(row_type: typing.Type) -> typing.Optional[RowMapper]:
     elif row_type in DICT_GENERICS:
         return DictRowMapper()
     elif row_type in NATIVE_SINGLE:
-        return SingleValueRowMapper()
+        return SingleValueRowMapper(row_type)
     # Exclude typing special forms that look like classes in Python 3.14+
     # Bare Union/Optional without type parameters cannot be mapped
     elif row_type in TYPING_SPECIAL_FORMS:
