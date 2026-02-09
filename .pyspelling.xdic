@@ -3,6 +3,7 @@ abspath
 abstractmethod
 ai
 aiohttp
+aiosqlite
 alphanums
 api
 arg

@@ -23,6 +23,7 @@ use async backends with `AsyncFunctionBinder`.
 | Backend    | Engine (driver)        | Sync | Async | Default Mode |
 |------------|------------------------|------|-------|--------------|
 | SQLite3    | `sqlite3` (stdlib)     | Yes  | No    | sync         |
+| SQLite3    | `aiosqlite`            | No   | Yes   | async        |
 | PostgreSQL | `psycopg2`             | Yes  | No    | sync         |
 | PostgreSQL | `psycopg` (v3)         | Yes  | Yes   | sync         |
 | PostgreSQL | `asyncpg`              | No   | Yes   | async        |
@@ -71,6 +72,46 @@ pool = create_connection_pool(
 # Temporary or in-memory style usage
 pool = create_connection_pool(
     "sqlite3:///tmp/scratch.db"
+)
+```
+
+### aiosqlite
+
+**Driver:** [aiosqlite](https://pypi.org/project/aiosqlite/)
+**Install:** `pip install aiosqlite`
+**Async:** Yes (async only, defaults to async mode)
+
+> **Note:** aiosqlite is an async-only driver. It does not support
+> synchronous mode. The `+async` suffix is optional because aiosqlite
+> defaults to async mode automatically. Explicitly specifying `+sync`
+> will raise an `UnsupportedBackendError`.
+
+#### URL Format
+
+    sqlite3+aiosqlite://{file_path}
+
+The explicit `+async` form is also accepted:
+
+    sqlite3+aiosqlite+async://{file_path}
+
+#### Examples
+
+``` python
+from dinao.backend import create_connection_pool
+
+# Basic asynchronous connection
+pool = create_connection_pool(
+    "sqlite3+aiosqlite:///var/data/myapp.db"
+)
+
+# Explicit +async (also valid)
+pool = create_connection_pool(
+    "sqlite3+aiosqlite+async:///var/data/myapp.db"
+)
+
+# Home directory path
+pool = create_connection_pool(
+    "sqlite3+aiosqlite://~/data/myapp.db"
 )
 ```
 
@@ -385,8 +426,9 @@ pool = create_connection_pool(
 
 DINAO supports asynchronous database access via `AsyncFunctionBinder`.
 Async support requires a backend that provides an `AsyncConnectionPool`;
-the PostgreSQL `psycopg` (v3) and `asyncpg` drivers support this (see
-the [Support Matrix](#support-matrix) above).
+the PostgreSQL `psycopg` (v3) and `asyncpg` drivers, and the SQLite3
+`aiosqlite` driver support this (see the
+[Support Matrix](#support-matrix) above).
 
 Async mode is enabled by appending `+async` to the driver portion of the
 connection URL. `AsyncFunctionBinder` uses `contextvars.ContextVar`

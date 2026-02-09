@@ -31,6 +31,7 @@ tests = [
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
+    "aiosqlite",
     "asyncpg",
     "psycopg2-binary",
     "psycopg[binary]",

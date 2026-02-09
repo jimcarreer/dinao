@@ -21,7 +21,7 @@ from dinao.backend.postgres import (
     ConnectionPoolPSQLPsycopg2,
     ConnectionPoolPSQLPsycopg3,
 )
-from dinao.backend.sqlite import ConnectionPoolSQLite3
+from dinao.backend.sqlite import AsyncConnectionPoolAiosqlite, ConnectionPoolSQLite3
 
 ENGINE_DEFAULTS = {"postgresql": "psycopg2", "sqlite3": None, "mariadb": "mariadbconnector", "mysql": "mysqlconnector"}
 MODE_DEFAULTS = {
@@ -29,6 +29,7 @@ MODE_DEFAULTS = {
     ("postgresql", "psycopg"): "sync",
     ("postgresql", "asyncpg"): "async",
     ("sqlite3", None): "sync",
+    ("sqlite3", "aiosqlite"): "async",
     ("mariadb", "mariadbconnector"): "sync",
     ("mysql", "mysqlconnector"): "sync",
 }
@@ -94,6 +95,10 @@ def create_connection_pool(db_url: str) -> ConnectionPoolBase:
         if mode == "async":
             return AsyncConnectionPoolPSQLPsycopg3(db_url)
         return ConnectionPoolPSQLPsycopg3(db_url)
+    if backend == "sqlite3" and engine == "aiosqlite":
+        if mode == "sync":
+            raise UnsupportedBackendError("The aiosqlite driver does not support sync mode")
+        return AsyncConnectionPoolAiosqlite(db_url)
     if backend == "sqlite3":
         if mode == "async":
             raise UnsupportedBackendError("The sqlite3 backend does not support async mode")

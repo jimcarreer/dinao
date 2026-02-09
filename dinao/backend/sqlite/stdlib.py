@@ -1,9 +1,9 @@
-"""Implementation of SQLite backends."""
+"""Implementation of SQLite backend using sqlite3."""
 
-import os.path
 import sqlite3
 
 from dinao.backend.base import Connection, ConnectionPool
+from dinao.backend.sqlite.base import ConnectionPoolSQLiteMixin
 from dinao.mung import StaticMungSymbolProvider
 
 
@@ -11,13 +11,14 @@ class ConnectionSQLite3(Connection):
     """Implementation of Connection for Sqlite3."""
 
     def _execute(self, cursor, sql: str, params: tuple = None):
+        """Execute SQL on the given cursor with optional parameters."""
         if params:
             cursor.execute(sql, params)
             return
         cursor.execute(sql)
 
 
-class ConnectionPoolSQLite3(ConnectionPool):
+class ConnectionPoolSQLite3(ConnectionPoolSQLiteMixin, ConnectionPool):
     """Implementation of ConnectionPool for SQLite3."""
 
     _mung_symbol = StaticMungSymbolProvider("?")
@@ -37,10 +38,6 @@ class ConnectionPoolSQLite3(ConnectionPool):
         super().__init__(db_url)
         self._cnx_kwargs = self._url_to_cnx_kwargs()
         self._raise_for_unexpected_args()
-
-    def _url_to_cnx_kwargs(self):
-        file_path = os.path.abspath(os.path.expanduser(self._db_url.path))
-        return {"database": file_path}
 
     def lease(self) -> Connection:  # noqa: D102
         inner_cnx = sqlite3.connect(**self._cnx_kwargs)

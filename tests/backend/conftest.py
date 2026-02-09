@@ -155,6 +155,12 @@ def tmp_asyncpg_db_url(rand_db_name) -> Generator[str, Any, None]:
 
 
 @pytest.fixture()
+def tmp_aiosqlite_db_url(tmpdir, rand_db_name) -> Generator[str, Any, None]:
+    """Provide a DB Connection Pool URL for the test aiosqlite instance."""
+    yield f"sqlite3+aiosqlite://{tmpdir}/{rand_db_name}"
+
+
+@pytest.fixture()
 def tmp_sqlite3_db_url(tmpdir, rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test sqlite instance."""
     yield f"sqlite3://{tmpdir}/{rand_db_name}"
