@@ -3,6 +3,7 @@
 from typing import Any, Tuple
 
 from dinao.binding.errors import TemplateError
+from dinao.mung import MungSymbolProvider, NumberedMungSymbolProvider, StaticMungSymbolProvider  # noqa: F401
 
 # fmt: off
 from pyparsing import (  # noqa: I101
@@ -102,10 +103,10 @@ class Template:
             node = node[arg_name] if isinstance(node, dict) else getattr(node, arg_name)
         return node
 
-    def render(self, mung_symbol: str, kwargs: dict) -> tuple[str | Any, tuple[Any, ...]]:
+    def render(self, mung_symbol: MungSymbolProvider, kwargs: dict) -> tuple[str | Any, tuple[Any, ...]]:
         """Render the template to SQL execution arguments.
 
-        :param mung_symbol: the symbol used to replace parameters in the template
+        :param mung_symbol: a provider that returns the symbol used to replace parameters in the template
         :param kwargs: the root dictionary of key word arguments to resolve parameters from
 
         :returns: a tuple where the first element is a SQL statement and the second is a tuple of its parameters
@@ -121,6 +122,6 @@ class Template:
                     frag = str(value)
                 else:
                     parameters.append(value)
-                    frag = mung_symbol
+                    frag = mung_symbol()
             munged += frag
         return munged, tuple(parameters)

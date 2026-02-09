@@ -4,6 +4,7 @@ import uuid
 
 from dinao.backend.base import Connection, ConnectionPool
 from dinao.backend.errors import BackendNotInstalledError, ConfigurationError
+from dinao.mung import StaticMungSymbolProvider
 
 
 class ConnectionMariaDB(Connection):
@@ -15,6 +16,8 @@ class ConnectionMariaDB(Connection):
 
 class ConnectionPoolMariaDB(ConnectionPool):
     """Implementation of ConnectionPool for MariaDB Connector."""
+
+    _mung_symbol = StaticMungSymbolProvider("?")
 
     def __init__(self, db_url: str):
         """Construct a connection pool for the given connection URL.
@@ -88,5 +91,5 @@ class ConnectionPoolMariaDB(ConnectionPool):
             self._pool.close()
 
     @property
-    def mung_symbol(self) -> str:  # noqa: D102
-        return "?"
+    def mung_symbol(self) -> StaticMungSymbolProvider:  # noqa: D102
+        return self._mung_symbol

@@ -86,7 +86,7 @@ class FunctionBinderBase(ABC):
         self._cnx_pool = pool
 
     @property
-    def mung_symbol(self) -> str:
+    def mung_symbol(self):
         """Return the mung symbol used for rendering templates bound by the binder."""
         if self._cnx_pool is None:
             raise NoPoolSetError("No connection pool has been set for the binder")

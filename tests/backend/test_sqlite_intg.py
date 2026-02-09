@@ -4,6 +4,7 @@ import uuid
 
 from dinao.backend import create_connection_pool
 from dinao.backend.base import ResultSet
+from dinao.mung import StaticMungSymbolProvider
 
 from tests.backend import sqlite_test_sql as test_sql
 
@@ -11,7 +12,7 @@ from tests.backend import sqlite_test_sql as test_sql
 def test_backend_impls(tmp_sqlite3_db_url: str):
     """Tests the basic backend implementations for sqlite."""
     cnx_pool = create_connection_pool(f"{tmp_sqlite3_db_url}")
-    assert "?" == cnx_pool.mung_symbol
+    assert isinstance(cnx_pool.mung_symbol, StaticMungSymbolProvider)
     cnx = cnx_pool.lease()
     cnx.execute(test_sql.CREATE_TABLE, commit=True)
     for x in range(10):

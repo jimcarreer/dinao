@@ -31,6 +31,7 @@ tests = [
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
+    "asyncpg",
     "psycopg2-binary",
     "psycopg[binary]",
     "psycopg-pool",
@@ -85,5 +86,4 @@ branch = true
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
-    "if TYPE_CHECKING:",
 ]

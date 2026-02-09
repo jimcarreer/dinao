@@ -134,6 +134,27 @@ def tmp_mysql_db_url(rand_db_name) -> Generator[str, Any, None]:
 
 
 @pytest.fixture()
+def tmp_asyncpg_db_url(rand_db_name) -> Generator[str, Any, None]:
+    """Provide a DB Connection Pool URL for the test postgres instance using asyncpg."""
+    import psycopg
+    from tests.backend import postgres_test_sql as test_sql
+
+    database = os.environ.get("DINAO_TEST_PSQL_DB", "postgres")
+    hostname = os.environ.get("DINAO_TEST_PSQL_HOST", "127.0.0.1")
+    username = os.environ.get("DINAO_TEST_PSQL_USER", "psql_test_user")
+    password = os.environ.get("DINAO_TEST_PSQL_PASS", "psql_test_pass")
+    port = int(os.getenv("DINAO_TEST_PSQL_PORT", 15432))
+    cnx = psycopg.connect(dbname=database, user=username, password=password, host=hostname, port=port, autocommit=True)
+    cursor = cnx.cursor()
+    cursor.execute(f"CREATE DATABASE {rand_db_name}")
+    yield f"postgresql+asyncpg+async://{username}:{password}@{hostname}:{port}/{rand_db_name}"
+    cursor.execute(test_sql.TERMINATE_DB_CONNS, (rand_db_name,))
+    cursor.execute(f"DROP DATABASE {rand_db_name}")
+    cursor.close()
+    cnx.close()
+
+
+@pytest.fixture()
 def tmp_sqlite3_db_url(tmpdir, rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test sqlite instance."""
     yield f"sqlite3://{tmpdir}/{rand_db_name}"

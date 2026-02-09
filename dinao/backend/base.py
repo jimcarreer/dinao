@@ -8,6 +8,7 @@ from typing import Any, Generator, List, Tuple
 from urllib.parse import parse_qs, urlparse
 
 from dinao.backend.errors import ConfigurationError
+from dinao.mung import MungSymbolProvider
 
 
 @dataclass
@@ -283,7 +284,7 @@ class ConnectionPoolBase(ABC):
 
     @property
     @abstractmethod
-    def mung_symbol(self) -> str:
+    def mung_symbol(self) -> MungSymbolProvider:
         """Return the symbol used when replacing variable specifiers in templated SQL."""
         pass  # pragma: no cover
 

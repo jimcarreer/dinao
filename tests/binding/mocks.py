@@ -11,6 +11,7 @@ from dinao.backend.base import (
     ConnectionPool,
     ResultSet,
 )
+from dinao.mung import StaticMungSymbolProvider
 
 
 class MockDMLCursor:
@@ -146,6 +147,8 @@ class MockConnection(Connection):
 class MockConnectionPool(ConnectionPool):
     """Mock implementation of the ConnectionPool interface for use in testing."""
 
+    _mung_symbol = StaticMungSymbolProvider("%s")
+
     def __init__(self, cursor_stack: List[Union[MockDMLCursor, MockDQLCursor]]):
         """Construct a mock connection pool.
 
@@ -157,8 +160,8 @@ class MockConnectionPool(ConnectionPool):
         self.disposed = 0
 
     @property
-    def mung_symbol(self) -> str:  # noqa: D102
-        return "%s"
+    def mung_symbol(self) -> StaticMungSymbolProvider:  # noqa: D102
+        return self._mung_symbol
 
     def lease(self) -> MockConnection:  # noqa: D102
         cnx = MockConnection(self.cursor_stack)
@@ -264,6 +267,8 @@ class AsyncMockConnection(AsyncConnection):
 class AsyncMockConnectionPool(AsyncConnectionPool):
     """Mock implementation of the AsyncConnectionPool interface for use in testing."""
 
+    _mung_symbol = StaticMungSymbolProvider("%s")
+
     def __init__(self, cursor_stack: List[Union[MockDMLCursor, MockDQLCursor]]):
         """Construct an async mock connection pool.
 
@@ -275,8 +280,8 @@ class AsyncMockConnectionPool(AsyncConnectionPool):
         self.disposed = 0
 
     @property
-    def mung_symbol(self) -> str:  # noqa: D102
-        return "%s"
+    def mung_symbol(self) -> StaticMungSymbolProvider:  # noqa: D102
+        return self._mung_symbol
 
     async def lease(self) -> AsyncMockConnection:  # noqa: D102
         cnx = AsyncMockConnection(self.cursor_stack)
