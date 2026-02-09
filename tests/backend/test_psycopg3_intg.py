@@ -39,6 +39,8 @@ def test_backend_impls(tmp_psycopg3_db_url: str, extra_args: str):
         assert 2 == len(res.fetchall())
     cnx_pool.release(cnx)
     cnx_pool.dispose()
+    # Disposing an already disposed pool is a no-op
+    cnx_pool.dispose()
 
 
 @pytest.mark.asyncio
@@ -62,9 +64,22 @@ async def test_async_backend_impls(tmp_psycopg3_async_db_url: str, extra_args: s
         await cnx.commit()
     async with cnx.query(test_sql.SIMPLE_SELECT, (6,)) as res:
         res: AsyncResultSet = res
+        assert res.rowcount > 0
         row = await res.fetchone()
         assert ["my_pk_col", "some_uuid", "col_bigint", "col_integer"] == [r.name for r in res.description]
+        # Access description again to exercise the cached path
+        assert res.description is res.description
         assert (7, 14) == (row[2], row[3])
         assert 2 == len(await res.fetchall())
+    # Exercise execute with commit=False and rollback
+    await cnx.execute(test_sql.SIMPLE_INSERT, (str(uuid.uuid4()), str(uuid.uuid4()), 99, 198), commit=False)
+    await cnx.rollback()
+    async with cnx.query(test_sql.SIMPLE_SELECT, (50,)) as res:
+        assert await res.fetchone() is None
     await cnx_pool.release(cnx)
+    # Lease again to exercise _open_pool when pool is already open
+    cnx2 = await cnx_pool.lease()
+    await cnx_pool.release(cnx2)
+    await cnx_pool.dispose()
+    # Disposing an already disposed pool is a no-op
     await cnx_pool.dispose()

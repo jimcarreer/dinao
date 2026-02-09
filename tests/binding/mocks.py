@@ -293,5 +293,5 @@ class AsyncMockConnectionPool(AsyncConnectionPool):
             if cnx == known_cnx:
                 cnx.released = True
 
-    async def dispose(self):  # noqa: D102
+    async def dispose(self):  # pragma: no cover  # noqa: D102
         self.disposed += 1

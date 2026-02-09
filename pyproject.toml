@@ -87,3 +87,6 @@ branch = true
 exclude_lines = [
     "pragma: no cover",
 ]
+partial_branches = [
+    "pragma: no branch",
+]

@@ -71,7 +71,7 @@ class FunctionBinderBase(ABC):
 
     def _validate_function(self, func):
         """Validate a function before binding. Override in subclasses for type checking."""
-        pass
+        pass  # pragma: no cover
 
     @property
     def pool(self) -> ConnectionPoolBase:

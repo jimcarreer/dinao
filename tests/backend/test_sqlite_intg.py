@@ -25,5 +25,10 @@ def test_backend_impls(tmp_sqlite3_db_url: str):
         assert ["my_pk_col", "some_uuid", "col_bigint", "col_integer"] == [r.name for r in res.description]
         assert (7, 14) == (row[2], row[3])
         assert 2 == len(res.fetchall())
+    # Exercise execute with commit=False and rollback
+    cnx.execute(test_sql.SIMPLE_INSERT, (str(uuid.uuid4()), str(uuid.uuid4()), 99, 198), commit=False)
+    cnx.rollback()
+    with cnx.query(test_sql.SIMPLE_SELECT, (50,)) as res:
+        assert res.fetchone() is None
     cnx_pool.release(cnx)
     cnx_pool.dispose()
