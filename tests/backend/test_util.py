@@ -9,6 +9,7 @@ from dinao.backend.postgres import (
     AsyncConnectionPoolPSQLPsycopg3,
     ConnectionPoolPSQLPsycopg3,
 )
+from dinao.backend.sqlite import AsyncConnectionPoolAiosqlite
 
 import pytest
 
@@ -66,6 +67,7 @@ import pytest
         ("postgresql+psycopg+bogus://user:pass@host:4444/dbname", "Invalid mode", ConfigurationError),
         ("postgresql+psycopg+a+b://user:pass@host:4444/dbname", "too many components", ConfigurationError),
         ("postgresql+asyncpg+sync://user:pass@host:4444/dbname", "does not support sync", UnsupportedBackendError),
+        ("sqlite3+aiosqlite+sync://test.db", "does not support sync", UnsupportedBackendError),
     ],
 )
 def test_backend_create_rejection(db_uri: str, match: str, except_class):
@@ -115,3 +117,12 @@ def test_asyncpg_pool_no_options():
     pool._cnx_kwargs.pop("options", None)
     kwargs = pool._make_pool_kwargs()
     assert "server_settings" not in kwargs
+
+
+def test_aiosqlite_pool_creation():
+    """Tests that aiosqlite async URL creates the correct pool type."""
+    pool = create_connection_pool("sqlite3+aiosqlite+async://test.db")
+    assert isinstance(pool, AsyncConnectionPoolAiosqlite)
+    # aiosqlite should default to async mode when mode is omitted
+    pool2 = create_connection_pool("sqlite3+aiosqlite://test.db")
+    assert isinstance(pool2, AsyncConnectionPoolAiosqlite)
