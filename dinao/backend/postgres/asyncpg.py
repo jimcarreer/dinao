@@ -214,7 +214,7 @@ class AsyncConnectionPoolPSQLAsyncpg(AsyncConnectionPoolPSQL):
         if self._pool is not None:
             return
         async with self._pool_lock:
-            if self._pool is not None:
+            if self._pool is not None:  # pragma: no cover
                 return
             import asyncpg
 

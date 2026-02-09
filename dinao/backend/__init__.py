@@ -94,9 +94,11 @@ def create_connection_pool(db_url: str) -> ConnectionPoolBase:
         if mode == "async":
             return AsyncConnectionPoolPSQLPsycopg3(db_url)
         return ConnectionPoolPSQLPsycopg3(db_url)
-    if backend == "sqlite3" and engine is None:
+    if backend == "sqlite3":
         if mode == "async":
             raise UnsupportedBackendError("The sqlite3 backend does not support async mode")
+        if engine is not None:
+            raise UnsupportedBackendError(f"The backend+engine '{scheme}' is not supported")
         return ConnectionPoolSQLite3(db_url)
     if backend == "mariadb" and engine == "mariadbconnector":
         if mode == "async":

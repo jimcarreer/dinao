@@ -228,7 +228,7 @@ async def test_async_binder_passes_cnx(async_binder_and_pool: Tuple[AsyncFunctio
         await clear_table()
         count = await connection.execute("INSERT INTO table (%s), (%s)", (1, 2))
         summed = 0
-        if count > 0:
+        if count > 0:  # pragma: no branch
             async with connection.query("SELECT * FROM table WHERE thing = %s", (my_arg,)) as results:
                 summed = sum([row[0] for row in await results.fetchall()])
         return summed

@@ -42,6 +42,9 @@ async def test_async_backend_impls(tmp_asyncpg_db_url: str, extra_args: str):
         # Verify fetchone returns None when exhausted
         assert await res.fetchone() is None
     await cnx_pool.release(cnx)
+    # Lease again to exercise the _ensure_pool early return path
+    cnx2 = await cnx_pool.lease()
+    await cnx_pool.release(cnx2)
     await cnx_pool.dispose()
     # Disposing an already disposed pool is a no-op
     await cnx_pool.dispose()

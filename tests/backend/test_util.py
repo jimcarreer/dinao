@@ -47,6 +47,7 @@ import pytest
             ConfigurationError,
         ),
         ("sqlite3+invalid://test.db", "not supported", UnsupportedBackendError),
+        ("sqlite3+invalid+async://test.db", "does not support async", UnsupportedBackendError),
         ("sqlite3://test.db?schema=test", "Unexpected argument", ConfigurationError),
         ("mariadb://user:pass@host:4444/", "name is required but missing", ConfigurationError),
         ("mariadb://user:pass@host:4444/dbname?pool_size=-1", "must be greater than 0", ConfigurationError),
@@ -55,7 +56,7 @@ import pytest
         ("mysql://user:pass@host:4444/dbname?pool_size=-1", "must be greater than 0", ConfigurationError),
         ("mysql://user:pass@host:4444/dbname?pool_name=", "cannot be an empty string", ConfigurationError),
         ("postgresql+psycopg2+async://user:pass@host:4444/dbname", "does not support async", UnsupportedBackendError),
-        ("sqlite3+none+async://test.db", "not supported", UnsupportedBackendError),
+        ("sqlite3+none+async://test.db", "does not support async", UnsupportedBackendError),
         (
             "mariadb+mariadbconnector+async://user:pass@host:4444/dbname",
             "does not support async",
@@ -106,7 +107,11 @@ def test_asyncpg_pool_ssl_kwargs():
 
 
 def test_asyncpg_pool_no_options():
-    """Tests asyncpg pool with schema stripped from options."""
+    """Tests asyncpg pool handles missing options correctly."""
     pool = create_connection_pool("postgresql+asyncpg+async://user:pass@host:5432/dbname")
     assert isinstance(pool, AsyncConnectionPoolPSQLAsyncpg)
     assert "server_settings" in pool._pool_kwargs
+    # Exercise the branch where options is absent from cnx_kwargs
+    pool._cnx_kwargs.pop("options", None)
+    kwargs = pool._make_pool_kwargs()
+    assert "server_settings" not in kwargs
