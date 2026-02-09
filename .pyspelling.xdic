@@ -75,6 +75,7 @@ ident
 impl
 init
 isclass
+iscoroutinefunction
 isinstance
 issubclass
 iterable

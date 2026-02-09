@@ -14,7 +14,7 @@ from dinao.binding.binders.base import (
     BoundTransactionBase,
     FunctionBinderBase,
 )
-from dinao.binding.errors import NoPoolSetError, TooManyRowsError
+from dinao.binding.errors import IncompatibleBindingError, NoPoolSetError, TooManyRowsError
 from dinao.binding.mappers import GENERATOR_GENERICS
 
 
@@ -25,6 +25,19 @@ class FunctionBinder(FunctionBinderBase):
         """Construct a function binder."""
         super().__init__()
         self._context_store = threading.local()
+
+    def _validate_function(self, func):
+        """Validate that the function is not a coroutine.
+
+        :raises IncompatibleBindingError
+        """
+        if inspect.iscoroutinefunction(func):
+            error = (
+                f"FunctionBinder cannot bind async function"
+                f" '{func.__name__}'; use AsyncFunctionBinder"
+                f" for async functions"
+            )
+            self._suppressed_raise(IncompatibleBindingError(error))
 
     def execute(self, sql: str) -> callable:
         """Binds a given function to a given SQL template.

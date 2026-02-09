@@ -11,6 +11,7 @@ from dinao.binding.errors import (
     BadReturnTypeError,
     CannotInferMappingError,
     FunctionAlreadyBoundError,
+    IncompatibleBindingError,
     MissingTemplateArgumentError,
     MultipleConnectionArgumentError,
     NoPoolSetError,
@@ -195,4 +196,52 @@ def test_async_binding_async_generator_throws(async_binder_and_pool):
 
         @binder.query("SELECT some_num FROM table LIMIT 3")
         async def async_generating_query_bad() -> AsyncGenerator[int, int]:
+            pass  # pragma: no cover
+
+
+def test_sync_binder_rejects_async_function(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests that decorating async functions with a sync binder raises IncompatibleBindingError."""
+    binder, _ = binder_and_pool
+    match = "cannot bind async function"
+
+    with pytest.raises(IncompatibleBindingError, match=match):
+
+        @binder.execute("INSERT INTO table (#{arg})")
+        async def async_exec(arg: str):
+            pass  # pragma: no cover
+
+    with pytest.raises(IncompatibleBindingError, match=match):
+
+        @binder.query("SELECT * FROM table WHERE col = #{arg}")
+        async def async_query(arg: str):
+            pass  # pragma: no cover
+
+    with pytest.raises(IncompatibleBindingError, match=match):
+
+        @binder.transaction()
+        async def async_txn():
+            pass  # pragma: no cover
+
+
+def test_async_binder_rejects_sync_function(async_binder_and_pool):
+    """Tests that decorating sync functions with an async binder raises IncompatibleBindingError."""
+    binder, _ = async_binder_and_pool
+    match = "cannot bind sync function"
+
+    with pytest.raises(IncompatibleBindingError, match=match):
+
+        @binder.execute("INSERT INTO table (#{arg})")
+        def sync_exec(arg: str):
+            pass  # pragma: no cover
+
+    with pytest.raises(IncompatibleBindingError, match=match):
+
+        @binder.query("SELECT * FROM table WHERE col = #{arg}")
+        def sync_query(arg: str):
+            pass  # pragma: no cover
+
+    with pytest.raises(IncompatibleBindingError, match=match):
+
+        @binder.transaction()
+        def sync_txn():
             pass  # pragma: no cover
