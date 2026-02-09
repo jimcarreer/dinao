@@ -1,0 +1,130 @@
+# Stress Test
+
+Concurrent stress test for DINAO backends with a
+live-updating terminal dashboard. Supports both SQLite
+(default) and PostgreSQL. Exercises every major binding
+feature (execute, query, transaction,
+Optional/list/Generator/AsyncGenerator/bool/int/dict
+returns) under heavy contention from multiple workers.
+The checker worker validates all seven `NATIVE_SINGLE`
+mapper types (`str`, `int`, `float`, `complex`, `bool`,
+`datetime`, `UUID`) via dedicated single-value queries.
+
+## Setup
+
+Create a virtual environment for this example:
+
+```bash
+cd examples/stress/
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install -e ../../          # install dinao from source
+```
+
+For PostgreSQL, start the database container:
+
+```bash
+docker compose up -d
+```
+
+## Running
+
+Run from inside the `examples/stress/` directory with the
+venv activated.
+
+### SQLite (default, no docker needed)
+
+```bash
+# Sync (threaded) stress test
+python sync_stress.py
+
+# Async (aiosqlite) stress test
+python async_stress.py
+```
+
+### PostgreSQL
+
+```bash
+# Sync (threaded) stress test
+python sync_stress.py --backend postgres
+
+# Async (psycopg async) stress test
+python async_stress.py --backend postgres
+```
+
+### CLI Flags
+
+| Flag        | Default  | Description                     |
+|-------------|----------|---------------------------------|
+| `--seconds` | 10       | How long to run                 |
+| `--workers` | 3        | Number of workers per role      |
+| `--backend` | sqlite   | Backend: `sqlite` or `postgres` |
+| `--url`     | (auto)   | Override connection URL         |
+
+Each run spawns five worker roles (inserter, transferrer,
+reader, checker, deleter) multiplied by the worker count.
+For PostgreSQL the connection pool is automatically scaled
+with `--workers` (pool_max = workers * 5 + 5, capped at
+50) so every worker can obtain a connection without
+queueing.
+
+```bash
+# Quick smoke test (SQLite)
+python sync_stress.py --seconds 3 --workers 1
+
+# Heavy contention (PostgreSQL)
+python async_stress.py --backend postgres --seconds 30 --workers 10
+
+# Custom connection URL
+python sync_stress.py --url "sqlite3:///tmp/custom.db"
+```
+
+## Live Dashboard
+
+While the test runs, a live-updating dashboard displays:
+
+- **Header** with database URL, worker count, total ops,
+  throughput, and an animated progress bar
+- **Worker table** with per-role status, ops count, ops/s,
+  and throughput bars color-coded by role
+- **Error panel** with a scrolling log of recent errors,
+  color-coded yellow for expected and red for unexpected
+
+When the test finishes, the dashboard is replaced by a
+static summary panel showing final results and a PASS/FAIL
+verdict.
+
+## Expected Errors
+
+These errors are normal under concurrent write contention:
+
+### SQLite
+- **database_locked** -- `sqlite3.OperationalError` from
+  SQLite write contention
+
+### PostgreSQL
+- **deadlock** -- `deadlock detected` from concurrent
+  row-level locking
+
+### Both backends
+- **insufficient_funds** -- transfer rejected because the
+  source account balance is too low
+- **missing_account** -- account deleted by another worker
+  between lookup and transfer
+
+## Programmatic Use
+
+Both `sync_stress.run()` and `async_stress.run()` return a
+`StressResult` that can be used for automated assertions:
+
+```python
+from common import build_backend_config, parse_stress_args
+from sync_stress import run
+
+args = parse_stress_args("test")
+config = build_backend_config(args)
+result = run(config, seconds=3, workers=2)
+assert result.errors.unexpected_count == 0
+assert result.total_ops > 0
+```

@@ -91,16 +91,34 @@ def test_class_row_mapper():
     assert actual.field_02 == 20
 
 
-def test_single_value_row_mapper():
-    """Tests the SingleValueRowMapper class."""
-    mapper = SingleValueRowMapper()
+@pytest.mark.parametrize(
+    "mapped_type, raw, expected",
+    (
+        (bool, 1, True),
+        (bool, 0, False),
+        (float, 3, 3.0),
+        (int, 42, 42),
+        (str, "hello", "hello"),
+        (bool, None, None),
+        (datetime, "2026-01-15T10:30:00", datetime(2026, 1, 15, 10, 30)),
+        (datetime, datetime(2026, 1, 15), datetime(2026, 1, 15)),
+        (UUID, "550e8400-e29b-41d4-a716-446655440000", UUID("550e8400-e29b-41d4-a716-446655440000")),
+        (complex, "(1+2j)", (1 + 2j)),
+    ),
+)
+def test_single_value_row_mapper(mapped_type, raw, expected):
+    """Tests the SingleValueRowMapper class casts to the target type."""
+    mapper = SingleValueRowMapper(mapped_type)
     descriptions = (ColumnDescriptor("field_01", 0),)
-    assert mapper(("test",), descriptions) == "test"
+    result = mapper((raw,), descriptions)
+    assert result == expected
+    if expected is not None:
+        assert type(result) is mapped_type
 
 
 def test_single_value_row_mapper_throws():
     """Tests the SingleValueRowMapper class throws when there are to many columns."""
-    mapper = SingleValueRowMapper()
+    mapper = SingleValueRowMapper(int)
     descriptions = (
         ColumnDescriptor("field_01", 0),
         ColumnDescriptor("field_02", 1),

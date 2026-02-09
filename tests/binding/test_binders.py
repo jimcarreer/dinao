@@ -233,7 +233,7 @@ def test_binder_passes_cnx(binder_and_pool: Tuple[FunctionBinder, MockConnection
     "binder_and_pool",
     [
         [
-            MockDQLCursor([(True,)], (("exists", 0),)),
+            MockDQLCursor([(1,)], (("exists", 0),)),
         ],
     ],
     indirect=["binder_and_pool"],

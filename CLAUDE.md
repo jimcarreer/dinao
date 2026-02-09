@@ -84,7 +84,11 @@ pip install -e ".[dev]"
     instead refactor the code to eliminate the circular dependency.
   - Large functions and loop bodies should generally be broken up into smaller functions where applicable to help with
     context window sizes on specific tasks, and to help with readability.
-  - When a new engine / database / backend is added, the backend documentation should be updated accordingly.
+  - When a new engine / database / backend is added, the backend
+    documentation should be updated accordingly.
+  - Avoid implicit string concatenation (adjacent string literals)
+    when a single string will fit within the line length limit. Use
+    one string instead of `"foo " "bar"`.
 
 ## Architecture
 

@@ -250,7 +250,7 @@ async def test_async_binder_passes_cnx(async_binder_and_pool: Tuple[AsyncFunctio
     "async_binder_and_pool",
     [
         [
-            MockDQLCursor([(True,)], (("exists", 0),)),
+            MockDQLCursor([(1,)], (("exists", 0),)),
         ],
     ],
     indirect=["async_binder_and_pool"],
