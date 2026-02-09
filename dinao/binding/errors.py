@@ -33,6 +33,12 @@ class TemplateError(BindingError):
     pass
 
 
+class IncompatibleBindingError(BindingError):
+    """Raised when a function's coroutine type is incompatible with its binder."""
+
+    pass
+
+
 class FunctionAlreadyBoundError(BindingError):
     """Raised when a function is bound more than once to a query, execution, or transaction."""
 

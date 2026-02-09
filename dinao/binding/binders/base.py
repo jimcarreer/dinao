@@ -69,6 +69,10 @@ class FunctionBinderBase(ABC):
         """Validate a pool before assignment. Override in subclasses for type checking."""
         pass
 
+    def _validate_function(self, func):
+        """Validate a function before binding. Override in subclasses for type checking."""
+        pass
+
     @property
     def pool(self) -> ConnectionPoolBase:
         """Get the connection pool used by this binder."""
@@ -112,6 +116,7 @@ class BoundFunction(ABC):
     """Abstract class for common behaviors between bound functions."""
 
     def __init__(self, binder: FunctionBinderBase, func: callable):  # noqa: D107
+        binder._validate_function(func)
         self._binder = binder
         self._func = func
         self._sig = inspect.signature(func)
