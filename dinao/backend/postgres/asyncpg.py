@@ -1,5 +1,6 @@
 """Implementation of PostgreSQL backend using asyncpg."""
 
+import asyncio
 import re
 import ssl as ssl_module
 from contextlib import asynccontextmanager
@@ -171,6 +172,7 @@ class AsyncConnectionPoolPSQLAsyncpg(AsyncConnectionPoolPSQL):
             raise BackendNotInstalledError(issue)
         self._raise_for_unexpected_args()
         self._pool = None
+        self._pool_lock = asyncio.Lock()
         self._pool_kwargs = self._make_pool_kwargs()
 
     def _make_pool_kwargs(self) -> dict:
@@ -203,8 +205,17 @@ class AsyncConnectionPoolPSQLAsyncpg(AsyncConnectionPoolPSQL):
         return kwargs
 
     async def _ensure_pool(self):
-        """Create the asyncpg pool on first use."""
-        if self._pool is None:
+        """Create the asyncpg pool on first use.
+
+        Uses a lock to prevent concurrent coroutines from creating
+        multiple pools, which would cause release errors when
+        connections from an earlier pool are returned to a later one.
+        """
+        if self._pool is not None:
+            return
+        async with self._pool_lock:
+            if self._pool is not None:
+                return
             import asyncpg
 
             self._pool = await asyncpg.create_pool(**self._pool_kwargs)

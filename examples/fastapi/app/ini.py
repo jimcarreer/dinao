@@ -3,7 +3,7 @@ import asyncio
 import dbi
 from dinao.backend import create_connection_pool
 
-con_url = "postgresql+psycopg+async://test_user:test_pass@postgres:5432/test_db"
+con_url = "postgresql+asyncpg://test_user:test_pass@postgres:5432/test_db"
 db_pool = create_connection_pool(con_url)
 dbi.binder.pool = db_pool
 

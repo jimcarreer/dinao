@@ -15,22 +15,19 @@ scheme:
 
     {backend}+{driver}+async://{user}:{password}@{host}:{port}/{db_name}
 
-Some drivers (such as `asyncpg`) default to async mode, so `+async` is
-optional for those drivers.
-
 See the [Async Usage](#async-usage) section below for details on how to
 use async backends with `AsyncFunctionBinder`.
 
 ## Support Matrix
 
-| Backend    | Engine (driver)        | Sync | Async |
-|------------|------------------------|------|-------|
-| SQLite3    | `sqlite3` (stdlib)     | Yes  | No    |
-| PostgreSQL | `psycopg2`             | Yes  | No    |
-| PostgreSQL | `psycopg` (v3)         | Yes  | Yes   |
-| PostgreSQL | `asyncpg`              | No   | Yes   |
-| MariaDB    | `mariadbconnector`     | Yes  | No    |
-| MySQL      | `mysqlconnector`       | Yes  | No    |
+| Backend    | Engine (driver)        | Sync | Async | Default Mode |
+|------------|------------------------|------|-------|--------------|
+| SQLite3    | `sqlite3` (stdlib)     | Yes  | No    | sync         |
+| PostgreSQL | `psycopg2`             | Yes  | No    | sync         |
+| PostgreSQL | `psycopg` (v3)         | Yes  | Yes   | sync         |
+| PostgreSQL | `asyncpg`              | No   | Yes   | async        |
+| MariaDB    | `mariadbconnector`     | Yes  | No    | sync         |
+| MySQL      | `mysqlconnector`       | Yes  | No    | sync         |
 
 ## SQLite3
 
