@@ -4,6 +4,7 @@ import uuid
 
 from dinao.backend import create_connection_pool
 from dinao.backend.base import AsyncResultSet, ResultSet
+from dinao.mung import StaticMungSymbolProvider
 
 import pytest
 
@@ -23,7 +24,7 @@ from tests.backend import postgres_test_sql as test_sql
 def test_backend_impls(tmp_psycopg3_db_url: str, extra_args: str):
     """Tests the basic backend implementations for psycopg (v3)."""
     cnx_pool = create_connection_pool(f"{tmp_psycopg3_db_url}{'?'+extra_args if extra_args else ''}")
-    assert "%s" == cnx_pool.mung_symbol
+    assert isinstance(cnx_pool.mung_symbol, StaticMungSymbolProvider)
     cnx = cnx_pool.lease()
     cnx.execute(test_sql.CREATE_TABLE, commit=True)
     for x in range(10):
@@ -52,7 +53,7 @@ def test_backend_impls(tmp_psycopg3_db_url: str, extra_args: str):
 async def test_async_backend_impls(tmp_psycopg3_async_db_url: str, extra_args: str):
     """Tests the basic async backend implementations for psycopg (v3)."""
     cnx_pool = create_connection_pool(f"{tmp_psycopg3_async_db_url}{'?'+extra_args if extra_args else ''}")
-    assert "%s" == cnx_pool.mung_symbol
+    assert isinstance(cnx_pool.mung_symbol, StaticMungSymbolProvider)
     cnx = await cnx_pool.lease()
     await cnx.execute(test_sql.CREATE_TABLE, commit=True)
     for x in range(10):

@@ -2,6 +2,7 @@
 
 from dinao.backend.base import AsyncConnection, AsyncConnectionPool, Connection, ConnectionPool
 from dinao.backend.errors import ConfigurationError
+from dinao.mung import StaticMungSymbolProvider
 
 
 class ConnectionPoolPSQLMixin:
@@ -54,6 +55,8 @@ class ConnectionPoolPSQL(ConnectionPoolPSQLMixin, ConnectionPool):
     Handles URL parameter parsing and validation common to all PostgreSQL drivers.
     """
 
+    _mung_symbol = StaticMungSymbolProvider("%s")
+
     def __init__(self, db_url: str):
         """Construct a connection pool base for the given connection URL.
 
@@ -76,8 +79,8 @@ class ConnectionPoolPSQL(ConnectionPoolPSQLMixin, ConnectionPool):
         self._cnx_kwargs = self._make_cnx_kwargs()
 
     @property
-    def mung_symbol(self) -> str:  # noqa: D102
-        return "%s"
+    def mung_symbol(self) -> StaticMungSymbolProvider:  # noqa: D102
+        return self._mung_symbol
 
 
 class AsyncConnectionPSQL(AsyncConnection):
@@ -93,6 +96,8 @@ class AsyncConnectionPoolPSQL(ConnectionPoolPSQLMixin, AsyncConnectionPool):
 
     Handles URL parameter parsing and validation common to all PostgreSQL drivers.
     """
+
+    _mung_symbol = StaticMungSymbolProvider("%s")
 
     def __init__(self, db_url: str):
         """Construct an async connection pool base for the given connection URL.
@@ -116,5 +121,5 @@ class AsyncConnectionPoolPSQL(ConnectionPoolPSQLMixin, AsyncConnectionPool):
         self._cnx_kwargs = self._make_cnx_kwargs()
 
     @property
-    def mung_symbol(self) -> str:  # noqa: D102
-        return "%s"
+    def mung_symbol(self) -> StaticMungSymbolProvider:  # noqa: D102
+        return self._mung_symbol

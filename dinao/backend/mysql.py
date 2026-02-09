@@ -6,6 +6,7 @@ from typing import Any, Generator
 
 from dinao.backend.base import Connection, ConnectionPool, ResultSet
 from dinao.backend.errors import BackendNotInstalledError, ConfigurationError, ConnectionPoolClosed
+from dinao.mung import StaticMungSymbolProvider
 
 
 class ConnectionMySQL(Connection):
@@ -33,6 +34,8 @@ class ConnectionMySQL(Connection):
 
 class ConnectionPoolMySQL(ConnectionPool):
     """Implementation of ConnectionPool for MySQL Connector."""
+
+    _mung_symbol = StaticMungSymbolProvider("%s")
 
     def __init__(self, db_url: str):
         """Construct a connection pool for the given connection URL.
@@ -103,5 +106,5 @@ class ConnectionPoolMySQL(ConnectionPool):
             self._closed = True
 
     @property
-    def mung_symbol(self) -> str:  # noqa: D102
-        return "%s"
+    def mung_symbol(self) -> StaticMungSymbolProvider:  # noqa: D102
+        return self._mung_symbol

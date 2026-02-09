@@ -20,13 +20,14 @@ use async backends with `AsyncFunctionBinder`.
 
 ## Support Matrix
 
-| Backend    | Engine (driver)        | Sync | Async |
-|------------|------------------------|------|-------|
-| SQLite3    | `sqlite3` (stdlib)     | Yes  | No    |
-| PostgreSQL | `psycopg2`             | Yes  | No    |
-| PostgreSQL | `psycopg` (v3)         | Yes  | Yes   |
-| MariaDB    | `mariadbconnector`     | Yes  | No    |
-| MySQL      | `mysqlconnector`       | Yes  | No    |
+| Backend    | Engine (driver)        | Sync | Async | Default Mode |
+|------------|------------------------|------|-------|--------------|
+| SQLite3    | `sqlite3` (stdlib)     | Yes  | No    | sync         |
+| PostgreSQL | `psycopg2`             | Yes  | No    | sync         |
+| PostgreSQL | `psycopg` (v3)         | Yes  | Yes   | sync         |
+| PostgreSQL | `asyncpg`              | No   | Yes   | async        |
+| MariaDB    | `mariadbconnector`     | Yes  | No    | sync         |
+| MySQL      | `mysqlconnector`       | Yes  | No    | sync         |
 
 ## SQLite3
 
@@ -75,12 +76,12 @@ pool = create_connection_pool(
 
 ## PostgreSQL
 
-DINAO supports PostgreSQL via two drivers: `psycopg2` and `psycopg`
-(version 3).
+DINAO supports PostgreSQL via three drivers: `psycopg2`, `psycopg`
+(version 3), and `asyncpg`.
 
 ### Common Optional Arguments
 
-Both PostgreSQL drivers support the following query string parameters:
+All PostgreSQL drivers support the following query string parameters:
 
 - `schema` - a list of schema names that sets the search path for
   connections, defaults to `public`
@@ -202,6 +203,61 @@ pool = create_connection_pool(
 pool = create_connection_pool(
     "postgresql+psycopg://myuser:mypass@db.example.com:5432"
     "/mydb?sslmode=verify-full"
+    "&sslrootcert=/etc/ssl/certs/db-ca.pem"
+)
+```
+
+### asyncpg
+
+**Driver:** [asyncpg](https://pypi.org/project/asyncpg/)
+**Install:** `pip install asyncpg`
+**Async:** Yes (async only, defaults to async mode)
+
+> **Note:** asyncpg is an async-only driver. It does not support
+> synchronous mode. The `+async` suffix is optional because asyncpg
+> defaults to async mode automatically. Explicitly specifying `+sync`
+> will raise an `UnsupportedBackendError`.
+
+#### URL Format
+
+    postgresql+asyncpg://{user}:{password}@{host}:{port}/{db_name}?{options}
+
+The explicit `+async` form is also accepted:
+
+    postgresql+asyncpg+async://{user}:{password}@{host}:{port}/{db_name}?{options}
+
+The asyncpg driver supports the common PostgreSQL optional arguments
+listed above.
+
+#### Examples
+
+``` python
+from dinao.backend import create_connection_pool
+
+# Basic asynchronous connection
+pool = create_connection_pool(
+    "postgresql+asyncpg://myuser:mypass"
+    "@localhost:5432/mydb"
+)
+
+# Explicit +async (also valid)
+pool = create_connection_pool(
+    "postgresql+asyncpg+async://myuser:mypass"
+    "@localhost:5432/mydb"
+)
+
+# Async with connection pool sizing
+pool = create_connection_pool(
+    "postgresql+asyncpg://myuser:mypass"
+    "@localhost:5432/mydb"
+    "?pool_min_conn=2&pool_max_conn=10"
+)
+
+# With SSL
+pool = create_connection_pool(
+    "postgresql+asyncpg://myuser:mypass"
+    "@db.example.com:5432/mydb"
+    "?sslmode=verify-full"
     "&sslrootcert=/etc/ssl/certs/db-ca.pem"
 )
 ```
@@ -329,7 +385,7 @@ pool = create_connection_pool(
 
 DINAO supports asynchronous database access via `AsyncFunctionBinder`.
 Async support requires a backend that provides an `AsyncConnectionPool`;
-currently only the PostgreSQL `psycopg` (v3) driver supports this (see
+the PostgreSQL `psycopg` (v3) and `asyncpg` drivers support this (see
 the [Support Matrix](#support-matrix) above).
 
 Async mode is enabled by appending `+async` to the driver portion of the

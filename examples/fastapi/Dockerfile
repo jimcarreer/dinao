@@ -7,7 +7,7 @@ RUN apt-get update -y
 RUN apt-get install netcat-openbsd
 RUN pip install --upgrade pip
 RUN pip install fastapi
-RUN pip install psycopg[binary] psycopg-pool
+RUN pip install asyncpg
 RUN pip install gunicorn uvicorn
 
 COPY ./dinao-tmp/ /dinao/

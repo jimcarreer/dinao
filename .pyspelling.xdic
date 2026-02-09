@@ -11,6 +11,8 @@ asgi
 aspell
 async
 asynccontextmanager
+asyncpg
+attr
 asyncio
 atexit
 autocommit
@@ -36,12 +38,15 @@ contextlib
 contextmanager
 contextvar
 contextvars
+ctx
 coroutine
+coroutines
 dataclass
 dataclasses
 datetime
 dbi
 dbname
+denest
 dev
 dicts
 dinao
@@ -52,6 +57,8 @@ expanduser
 fastapi
 fetchall
 fetchone
+fetchrow
+fetchval
 filterwarnings
 fmt
 formatter
@@ -99,6 +106,7 @@ noqa
 ns
 nullable
 num
+oid
 ok
 orm
 os
@@ -141,6 +149,7 @@ sslmode
 sslrootcert
 starlette
 staticmethod
+stmt
 stdlib
 str
 subclasses

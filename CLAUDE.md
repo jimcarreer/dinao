@@ -78,6 +78,10 @@ pip install -e ".[dev]"
   - Never import into the body of a function, class or anywhere besides the top of a file
     - There is exactly one exception to this rule at this time: when importing the driver module for a given database
       backend
+  - Prefer early returns to denest code; guard clauses at the top of a
+    function or block are cleaner than deeply nested if/else trees.
+  - Do not use `TYPE_CHECKING` to work around circular imports;
+    instead refactor the code to eliminate the circular dependency.
   - Large functions and loop bodies should generally be broken up into smaller functions where applicable to help with
     context window sizes on specific tasks, and to help with readability.
   - When a new engine / database / backend is added, the backend documentation should be updated accordingly.

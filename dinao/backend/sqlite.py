@@ -4,6 +4,7 @@ import os.path
 import sqlite3
 
 from dinao.backend.base import Connection, ConnectionPool
+from dinao.mung import StaticMungSymbolProvider
 
 
 class ConnectionSQLite3(Connection):
@@ -18,6 +19,8 @@ class ConnectionSQLite3(Connection):
 
 class ConnectionPoolSQLite3(ConnectionPool):
     """Implementation of ConnectionPool for SQLite3."""
+
+    _mung_symbol = StaticMungSymbolProvider("?")
 
     def __init__(self, db_url: str):
         """Construct a connection pool for the given connection URL.
@@ -50,5 +53,5 @@ class ConnectionPoolSQLite3(ConnectionPool):
         return
 
     @property
-    def mung_symbol(self) -> str:  # noqa: D102
-        return "?"
+    def mung_symbol(self) -> StaticMungSymbolProvider:  # noqa: D102
+        return self._mung_symbol

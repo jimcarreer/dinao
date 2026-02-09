@@ -5,6 +5,7 @@ from pathlib import Path
 from dinao.backend import create_connection_pool
 from dinao.backend.base import ResultSet
 from dinao.backend.errors import ConnectionPoolClosed
+from dinao.mung import StaticMungSymbolProvider
 
 import pytest
 
@@ -25,7 +26,7 @@ CA_PATH = Path("./tests/vols/tls/ca.crt").absolute()
 def test_backend_impls(tmp_mysql_db_url: str, extra_args: str):
     """Tests the basic backend implementations for MySQL."""
     cnx_pool = create_connection_pool(f"{tmp_mysql_db_url}{'?'+extra_args if extra_args else ''}")
-    assert "%s" == cnx_pool.mung_symbol
+    assert isinstance(cnx_pool.mung_symbol, StaticMungSymbolProvider)
     cnx = cnx_pool.lease()
     cnx.execute(test_sql.CREATE_TABLE, commit=True)
     for x in range(10):
