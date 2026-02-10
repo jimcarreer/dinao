@@ -161,7 +161,7 @@ async def test_async_generating_query_clears_context_on_early_break(
 
     gen = generating_query()
     consumed = []
-    async for row in gen:
+    async for row in gen:  # pragma: no branch
         consumed.append(row)
         if row >= 2:
             break
@@ -220,7 +220,7 @@ async def test_async_generating_query_preserves_context_in_transaction_on_break(
     async def do_in_transaction():
         gen = generating_query()
         consumed = []
-        async for row in gen:
+        async for row in gen:  # pragma: no branch
             consumed.append(row)
             if row >= 2:
                 break
