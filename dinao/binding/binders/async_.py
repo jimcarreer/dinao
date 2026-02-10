@@ -182,8 +182,6 @@ class AsyncFunctionBinder(FunctionBinderBase):
             await self.pool.release(cnx)
 
 
-
-
 class AsyncBoundQuery(BoundQueryBase):
     """Async implementation of a bound function that represents a SQL query that returns rows."""
 
