@@ -59,6 +59,7 @@ denest
 dev
 dicts
 dinao
+dirname
 docstrings
 dst
 elif
@@ -103,6 +104,7 @@ kwargs
 len
 lifecycle
 localhost
+makedirs
 mappable
 mariadb
 mariadbconnector
@@ -122,6 +124,7 @@ mysql
 mysqlconnector
 myuser
 namespace
+nonlocal
 noqa
 ns
 nullable
@@ -180,6 +183,7 @@ stdlib
 str
 strftime
 subclasses
+sys
 templated
 templating
 tid

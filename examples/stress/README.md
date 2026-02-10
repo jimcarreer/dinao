@@ -108,7 +108,7 @@ verdict.
 When `--fail-fast` is supplied, the test shuts down
 immediately on the first unexpected error. A crash
 report is written to the current directory as
-`stress_crash_YYYYMMDD_HHMMSS.log` containing:
+`stress_crash_<datetime>.log` containing:
 
 - Timestamp and Python version
 - Backend, mode, URL, and worker configuration

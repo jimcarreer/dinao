@@ -56,7 +56,7 @@ class Worker(threading.Thread):
         raise NotImplementedError
 
     def run(self):
-        """Run work() in a loop until the duration elapses or shutdown is signalled."""
+        """Run work() in a loop until the duration elapses or shutdown is signaled."""
         deadline = time.monotonic() + self.duration
         while time.monotonic() < deadline and not self.tracker.shutdown.is_set():
             try:
