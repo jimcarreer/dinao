@@ -14,8 +14,14 @@ import uuid
 from datetime import datetime
 from uuid import UUID
 
-from common import BackendConfig, StressResult, build_backend_config, build_error_tracker, parse_stress_args
-from common import rand_account_data
+from common import (
+    BackendConfig,
+    StressResult,
+    build_backend_config,
+    build_error_tracker,
+    parse_stress_args,
+    rand_account_data,
+)
 
 from dashboard import Dashboard, LiveMetrics
 
@@ -50,9 +56,9 @@ class Worker(threading.Thread):
         raise NotImplementedError
 
     def run(self):
-        """Run work() in a loop until the duration elapses."""
+        """Run work() in a loop until the duration elapses or shutdown is signalled."""
         deadline = time.monotonic() + self.duration
-        while time.monotonic() < deadline:
+        while time.monotonic() < deadline and not self.tracker.shutdown.is_set():
             try:
                 self.work()
                 self.ops += 1
@@ -153,7 +159,8 @@ class Checker(Worker):
         assert sent >= 0, f"sent={sent!r}"
         assert received >= 0, f"received={received!r}"
         dbi.transfers_for(acct.account_id)
-        list(dbi.stream_transfers_for(acct.account_id))
+        for _ in dbi.stream_transfers_for(acct.account_id):
+            pass
         _check_native_single_types(acct)
 
 
@@ -176,12 +183,13 @@ class Deleter(Worker):
 WORKER_CLASSES = [Inserter, Transferrer, Reader, Checker, Deleter]
 
 
-def run(config: BackendConfig, seconds: int, workers: int) -> StressResult:
+def run(config: BackendConfig, seconds: int, workers: int, fail_fast: bool = False) -> StressResult:
     """Set up the pool, seed data, and fire concurrent workers.
 
     :param config: backend configuration
     :param seconds: how long to run
     :param workers: number of workers per role
+    :param fail_fast: if True, stop on first unexpected error
     :returns: aggregated stress test results
     """
     pool = create_connection_pool(config.sync_url)
@@ -199,7 +207,14 @@ def run(config: BackendConfig, seconds: int, workers: int) -> StressResult:
     dashboard = Dashboard(f"DINAO Sync Stress Test ({config.name})", metrics)
     dashboard.console.print(f"[dim]Seeded {len(seed)} accounts into[/] [cyan]{config.sync_url}[/]\n")
 
-    tracker = build_error_tracker(on_error=metrics.record_error)
+    tracker = build_error_tracker(on_error=metrics.record_error, fail_fast=fail_fast)
+    tracker.context = {
+        "Mode": "sync",
+        "Backend": config.name,
+        "URL": config.sync_url,
+        "Workers per role": str(workers),
+        "Planned duration": f"{seconds}s",
+    }
 
     threads = []
     for i in range(workers):
@@ -221,6 +236,10 @@ def run(config: BackendConfig, seconds: int, workers: int) -> StressResult:
 
     result = StressResult(elapsed, total_ops, final_count, tracker)
     dashboard.print_summary(result)
+    if tracker.crash_report_path:
+        dashboard.console.print(
+            f"[bold red]Fail-fast triggered. Crash report: {tracker.crash_report_path}[/]"
+        )
     pool.dispose()
     return result
 
@@ -229,7 +248,7 @@ def main():
     """Parse args and run the sync stress test."""
     args = parse_stress_args("Sync stress test")
     config = build_backend_config(args)
-    run(config, args.seconds, args.workers)
+    run(config, args.seconds, args.workers, fail_fast=args.fail_fast)
 
 
 if __name__ == "__main__":

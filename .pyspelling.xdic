@@ -67,6 +67,7 @@ exc
 expanduser
 fastapi
 fetchall
+finalizer
 fetchone
 fetchrow
 fetchval
@@ -168,6 +169,7 @@ sql
 sqlite
 src
 ssl
+subdirectory
 substring
 sslmode
 sslrootcert
