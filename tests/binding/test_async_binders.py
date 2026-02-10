@@ -132,6 +132,116 @@ async def test_async_generating_query(async_binder_and_pool: Tuple[AsyncFunction
     "async_binder_and_pool",
     [
         [
+            MockDQLCursor([(1,), (2,), (3,), (4,), (5,)], (("val", 99),)),
+            MockDMLCursor(1),
+        ],
+    ],
+    indirect=["async_binder_and_pool"],
+)
+async def test_async_generating_query_clears_context_on_early_break(
+    async_binder_and_pool: Tuple[AsyncFunctionBinder, AsyncMockConnectionPool],
+):
+    """Tests the context var is None after breaking early from an async generating query.
+
+    When a consumer breaks out of ``async for``, the async generator is
+    not closed immediately — the finalizer runs later as a separate task.
+    The fix clears the context var before each yield so that on break the
+    var is already None and subsequent operations lease a fresh connection
+    instead of reusing the stale one.
+    """
+    binder, pool = async_binder_and_pool
+
+    @binder.query("SELECT val FROM table")
+    async def generating_query() -> Generator[int, None, None]:
+        pass  # pragma: no cover
+
+    @binder.execute("INSERT INTO table VALUES (#{arg})")
+    async def bound_insert(arg: str) -> int:
+        pass  # pragma: no cover
+
+    gen = generating_query()
+    consumed = []
+    async for row in gen:
+        consumed.append(row)
+        if row >= 2:
+            break
+
+    assert consumed == [1, 2]
+    # The fix clears the context var before each yield, so after break
+    # it must be None — not a stale reference to the generator's connection.
+    assert binder._context_store.get() is None
+
+    # A subsequent operation must lease a fresh connection, not the
+    # generator's stale one.
+    await bound_insert("after_break")
+    assert len(pool.connection_stack) == 2
+    assert pool.connection_stack[0] is not pool.connection_stack[1]
+    pool.connection_stack[1].assert_clean()
+
+    # Explicitly close the abandoned generator to trigger rollback +
+    # release on the generator's connection.
+    await gen.aclose()
+    assert pool.connection_stack[0].released
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "async_binder_and_pool",
+    [
+        [
+            MockDQLCursor([(1,), (2,), (3,), (4,), (5,)], (("val", 99),)),
+            MockDMLCursor(1),
+        ],
+    ],
+    indirect=["async_binder_and_pool"],
+)
+async def test_async_generating_query_preserves_context_in_transaction_on_break(
+    async_binder_and_pool: Tuple[AsyncFunctionBinder, AsyncMockConnectionPool],
+):
+    """Tests the context var is not cleared on early break when inside a transaction.
+
+    When a generating query runs within a ``@binder.transaction()`` the
+    generator does not own the connection (the transaction does).  The
+    context var must remain pointing at the transaction's connection even
+    when the consumer breaks early, so that subsequent operations within
+    the transaction continue to reuse the same connection.
+    """
+    binder, pool = async_binder_and_pool
+
+    @binder.query("SELECT val FROM table")
+    async def generating_query() -> Generator[int, None, None]:
+        pass  # pragma: no cover
+
+    @binder.execute("INSERT INTO table VALUES (#{arg})")
+    async def bound_insert(arg: str) -> int:
+        pass  # pragma: no cover
+
+    @binder.transaction()
+    async def do_in_transaction():
+        gen = generating_query()
+        consumed = []
+        async for row in gen:
+            consumed.append(row)
+            if row >= 2:
+                break
+        assert consumed == [1, 2]
+        # Context var must still reference the transaction's connection
+        assert binder._context_store.get() is not None
+        # Subsequent operation reuses the same transaction connection
+        await bound_insert("after_break")
+        await gen.aclose()
+
+    await do_in_transaction()
+    # Everything used a single connection from the transaction
+    assert len(pool.connection_stack) == 1
+    pool.connection_stack[0].assert_clean()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "async_binder_and_pool",
+    [
+        [
             MockDQLCursor([(1, "2", 3.0)], (("field_01", 0), ("field_02", 2), ("field_03", 3))),
             MockDQLCursor([(1, "2", 3.0), (4, "5", 6.0)], (("field_01", 0), ("field_02", 2), ("field_03", 3))),
         ],
@@ -324,6 +434,50 @@ async def test_async_optional_return(async_binder_and_pool: Tuple[AsyncFunctionB
     # Test Class | None with no result
     result = await query_union_none_class("not_exists")
     assert result is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "async_binder_and_pool",
+    [
+        [
+            MockDMLCursor(1),
+            MockDMLCursor(1),
+        ],
+    ],
+    indirect=["async_binder_and_pool"],
+)
+async def test_async_binder_clears_context_on_failed_release(
+    async_binder_and_pool: Tuple[AsyncFunctionBinder, AsyncMockConnectionPool],
+):
+    """Tests the ContextVar is cleared even when pool.release() raises."""
+    binder, pool = async_binder_and_pool
+
+    # Replace the pool's release with one that raises
+    original_release = pool.release
+
+    async def failing_release(cnx):
+        await original_release(cnx)
+        raise RuntimeError("simulated release failure")
+
+    pool.release = failing_release
+
+    @binder.execute("INSERT INTO table VALUES (#{arg})")
+    async def bound_insert(arg: str) -> int:
+        pass  # pragma: no cover
+
+    # First call: release raises, but ContextVar should still be cleared
+    with pytest.raises(RuntimeError, match="simulated release failure"):
+        await bound_insert("first")
+
+    # Restore normal release for the second call
+    pool.release = original_release
+
+    # Second call: should get a fresh connection, not a stale one
+    await bound_insert("second")
+
+    assert len(pool.connection_stack) == 2
+    assert pool.connection_stack[0] is not pool.connection_stack[1]
 
 
 @pytest.mark.asyncio
