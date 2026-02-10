@@ -51,16 +51,21 @@ python sync_stress.py --backend postgres
 
 # Async (psycopg async) stress test
 python async_stress.py --backend postgres
+
+# Async (asyncpg) stress test
+python async_stress.py --backend postgres --engine asyncpg
 ```
 
 ### CLI Flags
 
-| Flag        | Default  | Description                     |
-|-------------|----------|---------------------------------|
-| `--seconds` | 10       | How long to run                 |
-| `--workers` | 3        | Number of workers per role      |
-| `--backend` | sqlite   | Backend: `sqlite` or `postgres` |
-| `--url`     | (auto)   | Override connection URL         |
+| Flag          | Default  | Description                        |
+|---------------|----------|------------------------------------|
+| `--seconds`   | 10       | How long to run                    |
+| `--workers`   | 3        | Number of workers per role         |
+| `--backend`   | sqlite   | Backend: `sqlite` or `postgres`    |
+| `--engine`    | psycopg  | Async engine: `psycopg`/`asyncpg` |
+| `--url`       | (auto)   | Override connection URL            |
+| `--fail-fast` | off      | Stop on first unexpected error     |
 
 Each run spawns five worker roles (inserter, transferrer,
 reader, checker, deleter) multiplied by the worker count.
@@ -73,8 +78,11 @@ queueing.
 # Quick smoke test (SQLite)
 python sync_stress.py --seconds 3 --workers 1
 
-# Heavy contention (PostgreSQL)
+# Heavy contention (PostgreSQL, psycopg)
 python async_stress.py --backend postgres --seconds 30 --workers 10
+
+# Heavy contention (PostgreSQL, asyncpg)
+python async_stress.py --backend postgres --engine asyncpg --seconds 30 --workers 10
 
 # Custom connection URL
 python sync_stress.py --url "sqlite3:///tmp/custom.db"
@@ -94,6 +102,23 @@ While the test runs, a live-updating dashboard displays:
 When the test finishes, the dashboard is replaced by a
 static summary panel showing final results and a PASS/FAIL
 verdict.
+
+## Fail-Fast Mode
+
+When `--fail-fast` is supplied, the test shuts down
+immediately on the first unexpected error. A crash
+report is written to the current directory as
+`stress_crash_<datetime>.log` containing:
+
+- Timestamp and Python version
+- Backend, mode, URL, and worker configuration
+- The full exception type, message, and traceback
+- A summary of all expected and unexpected errors
+  recorded up to the point of the crash
+
+```bash
+python async_stress.py --backend postgres --fail-fast
+```
 
 ## Expected Errors
 

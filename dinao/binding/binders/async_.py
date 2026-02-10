@@ -175,8 +175,11 @@ class AsyncFunctionBinder(FunctionBinderBase):
             await cnx.rollback()
             raise
         finally:
-            await self.pool.release(cnx)
+            # Clear the context var before releasing so that a failed
+            # release (e.g. asyncpg resetting a dirty connection) cannot
+            # leave a stale reference that poisons subsequent operations.
             self._context_store.set(None)
+            await self.pool.release(cnx)
 
 
 class AsyncBoundQuery(BoundQueryBase):
@@ -240,17 +243,34 @@ class AsyncBoundGeneratingQuery(BoundGeneratingQueryBase):
     async def __call__(self, *args, **kwargs):
         """Execute the templated SQL as an async query with results.
 
+        Clears the binder's context var before each yield and restores
+        it after resuming.  When a consumer breaks out of ``async for``,
+        Python does **not** immediately close the async generator; the
+        finalizer runs later as a separate task.  Without this guard the
+        context var would still reference the generator's leased
+        connection, causing subsequent operations on the same task to
+        reuse it while the deferred finalizer concurrently tries to
+        roll back and release the same connection — triggering the
+        asyncpg "cannot perform operation: another operation is in
+        progress" error.
+
         :param args: the positional arguments of the bound / decorated function
         :param kwargs: the keyword arguments of the bound / decorated function
         """
         bound = self._sig.bind(*args, **kwargs)
         bound.apply_defaults()
         sql, values = self._sql_template.render(self._binder.mung_symbol, bound.arguments)
+        # True when this generator leased the connection (not reusing a transaction's)
+        owns_cnx = self._binder._context_store.get() is None
         async with self._binder.connection() as cnx:
             async with cnx.query(sql, values) as results:
                 row = await results.fetchone()
                 while row:
+                    if owns_cnx:
+                        self._binder._context_store.set(None)
                     yield self._row_mapper(row, results.description)
+                    if owns_cnx:
+                        self._binder._context_store.set(cnx)
                     row = await results.fetchone()
 
 

@@ -7,3 +7,4 @@ coverage_report
 .coverage
 .idea
 .venv
+examples/stress/crash_logs/*.log

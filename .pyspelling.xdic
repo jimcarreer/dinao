@@ -59,6 +59,7 @@ denest
 dev
 dicts
 dinao
+dirname
 docstrings
 dst
 elif
@@ -67,6 +68,7 @@ exc
 expanduser
 fastapi
 fetchall
+finalizer
 fetchone
 fetchrow
 fetchval
@@ -102,6 +104,7 @@ kwargs
 len
 lifecycle
 localhost
+makedirs
 mappable
 mariadb
 mariadbconnector
@@ -121,6 +124,7 @@ mysql
 mysqlconnector
 myuser
 namespace
+nonlocal
 noqa
 ns
 nullable
@@ -168,6 +172,7 @@ sql
 sqlite
 src
 ssl
+subdirectory
 substring
 sslmode
 sslrootcert
@@ -178,6 +183,7 @@ stdlib
 str
 strftime
 subclasses
+sys
 templated
 templating
 tid

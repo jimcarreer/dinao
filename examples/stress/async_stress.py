@@ -5,6 +5,7 @@ stream, and delete accounts.  Run with:
 
     python async_stress.py [--seconds 10] [--workers 4]
     python async_stress.py --backend postgres [--seconds 10]
+    python async_stress.py --backend postgres --engine asyncpg
 """
 
 import asyncio
@@ -16,8 +17,14 @@ from uuid import UUID
 
 import async_dbi as dbi
 
-from common import BackendConfig, StressResult, build_backend_config, build_error_tracker, parse_stress_args
-from common import rand_account_data
+from common import (
+    BackendConfig,
+    StressResult,
+    build_backend_config,
+    build_error_tracker,
+    parse_stress_args,
+    rand_account_data,
+)
 
 from dashboard import Dashboard, LiveMetrics
 
@@ -39,7 +46,7 @@ async def _run_worker(name, worker_id, duration, tracker, metrics, work):
     """
     deadline = time.monotonic() + duration
     ops = 0
-    while time.monotonic() < deadline:
+    while time.monotonic() < deadline and not tracker.shutdown.is_set():
         try:
             await work()
             ops += 1
@@ -102,11 +109,12 @@ async def reader(worker_id, duration, tracker, metrics):
     :param metrics: shared LiveMetrics instance
     :returns: number of successful operations
     """
-    use_paginate = [True]
+    paginate = True
 
     async def work():
+        nonlocal paginate
         total = await dbi.count_accounts()
-        if use_paginate[0]:
+        if paginate:
             page_size = random.randint(5, 25)
             offset = random.randint(0, max(0, total - page_size))
             await dbi.list_accounts({"limit": page_size, "offset": offset})
@@ -116,7 +124,7 @@ async def reader(worker_id, duration, tracker, metrics):
                 i += 1
                 if i >= 50:
                     break
-        use_paginate[0] = not use_paginate[0]
+        paginate = not paginate
 
     return await _run_worker("Reader", worker_id, duration, tracker, metrics, work)
 
@@ -176,7 +184,8 @@ async def checker(worker_id, duration, tracker, metrics):
         assert sent >= 0, f"sent={sent!r}"
         assert received >= 0, f"received={received!r}"
         await dbi.transfers_for(acct.account_id)
-        [t async for t in dbi.stream_transfers_for(acct.account_id)]
+        async for _ in dbi.stream_transfers_for(acct.account_id):
+            pass
         await _check_native_single_types(acct)
 
     return await _run_worker("Checker", worker_id, duration, tracker, metrics, work)
@@ -214,12 +223,13 @@ WORKER_FACTORIES = [
 ]
 
 
-async def run(config: BackendConfig, seconds: int, workers: int) -> StressResult:
+async def run(config: BackendConfig, seconds: int, workers: int, fail_fast: bool = False) -> StressResult:
     """Set up the pool, seed data, and fire concurrent tasks.
 
     :param config: backend configuration
     :param seconds: how long to run
     :param workers: number of workers per role
+    :param fail_fast: if True, stop on first unexpected error
     :returns: aggregated stress test results
     """
     pool = create_connection_pool(config.async_url)
@@ -237,7 +247,14 @@ async def run(config: BackendConfig, seconds: int, workers: int) -> StressResult
     dashboard = Dashboard(f"DINAO Async Stress Test ({config.name})", metrics)
     dashboard.console.print(f"[dim]Seeded {len(seed)} accounts into[/] [cyan]{config.async_url}[/]\n")
 
-    tracker = build_error_tracker(on_error=metrics.record_error)
+    tracker = build_error_tracker(on_error=metrics.record_error, fail_fast=fail_fast)
+    tracker.context = {
+        "Mode": "async",
+        "Backend": config.name,
+        "URL": config.async_url,
+        "Workers per role": str(workers),
+        "Planned duration": f"{seconds}s",
+    }
 
     tasks = []
     for i in range(workers):
@@ -256,6 +273,10 @@ async def run(config: BackendConfig, seconds: int, workers: int) -> StressResult
 
     result = StressResult(elapsed, total_ops, final_count, tracker)
     dashboard.print_summary(result)
+    if tracker.crash_report_path:
+        dashboard.console.print(
+            f"[bold red]Fail-fast triggered. Crash report: {tracker.crash_report_path}[/]"
+        )
     await pool.dispose()
     return result
 
@@ -264,7 +285,7 @@ def main():
     """Parse args and run the async stress test."""
     args = parse_stress_args("Async stress test")
     config = build_backend_config(args)
-    asyncio.run(run(config, args.seconds, args.workers))
+    asyncio.run(run(config, args.seconds, args.workers, fail_fast=args.fail_fast))
 
 
 if __name__ == "__main__":

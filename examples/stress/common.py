@@ -2,8 +2,11 @@
 
 import argparse
 import dataclasses
+import os
 import random
+import sys
 import threading
+import traceback
 import uuid
 from datetime import datetime, timezone
 
@@ -13,7 +16,8 @@ _SQLITE_PK = "INTEGER PRIMARY KEY AUTOINCREMENT"
 _POSTGRES_PK = "SERIAL PRIMARY KEY"
 
 _DEFAULT_POSTGRES_SYNC_URL = "postgresql+psycopg://postgres:postgres@localhost:15432/dinao_stress"
-_DEFAULT_POSTGRES_ASYNC_URL = "postgresql+psycopg+async://postgres:postgres@localhost:15432/dinao_stress"
+_DEFAULT_POSTGRES_ASYNC_PSYCOPG_URL = "postgresql+psycopg+async://postgres:postgres@localhost:15432/dinao_stress"
+_DEFAULT_POSTGRES_ASYNC_ASYNCPG_URL = "postgresql+asyncpg://postgres:postgres@localhost:15432/dinao_stress"
 
 
 @dataclasses.dataclass
@@ -76,11 +80,12 @@ class ErrorTracker:
     number of sampled messages for diagnostics.
     """
 
-    def __init__(self, max_samples: int = MAX_ERROR_SAMPLES, on_error=None):
+    def __init__(self, max_samples: int = MAX_ERROR_SAMPLES, on_error=None, fail_fast: bool = False):
         """Construct an error tracker.
 
         :param max_samples: maximum samples to retain per category
         :param on_error: optional callback(expected, category, message)
+        :param fail_fast: if True, stop on first unexpected error and write crash report
         """
         self._lock = threading.Lock()
         self._max_samples = max_samples
@@ -88,6 +93,10 @@ class ErrorTracker:
         self.expected: dict[str, ErrorCategory] = {}
         self.unexpected: dict[str, ErrorCategory] = {}
         self._on_error = on_error
+        self.fail_fast = fail_fast
+        self.shutdown = threading.Event()
+        self.context: dict = {}
+        self.crash_report_path = None
 
     def expect(self, exc_class: type, pattern: str, category: str) -> "ErrorTracker":
         """Register an expected error pattern.
@@ -117,6 +126,9 @@ class ErrorTracker:
                 return True
         with self._lock:
             self._record_to(self.unexpected, exc_type, exc_type, exc_msg)
+            if self.fail_fast and not self.shutdown.is_set():
+                self.shutdown.set()
+                self._write_crash_report(exc)
         if self._on_error is not None:
             self._on_error(False, exc_type, exc_msg)
         return False
@@ -130,6 +142,51 @@ class ErrorTracker:
         if len(entry.samples) < self._max_samples:
             entry.samples.append(ErrorSample(exc_type, exc_msg))
 
+    def _write_crash_report(self, exc: Exception):
+        """Write a detailed crash report file for the failing exception.
+
+        Must be called while ``self._lock`` is held so that the error
+        summary reflects a consistent snapshot.
+        """
+        tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        now = datetime.now(timezone.utc)
+        file_ts = now.strftime("%Y%m%d_%H%M%S")
+        path = f"./crash_logs/stress_crash_{file_ts}.log"
+
+        lines = [
+            "=== DINAO Stress Test Crash Report ===",
+            f"Timestamp: {now.isoformat()}",
+            f"Python: {sys.version}",
+        ]
+        for key, val in self.context.items():
+            lines.append(f"{key}: {val}")
+        lines.append("")
+        lines.append("=== Fatal Error ===")
+        lines.append(f"Type: {type(exc).__name__}")
+        lines.append(f"Message: {exc}")
+        lines.append("")
+        lines.append("=== Traceback ===")
+        lines.append(tb)
+        lines.append("=== Error Summary at Crash ===")
+        exp_total = sum(c.count for c in self.expected.values())
+        lines.append(f"Expected ({exp_total} total):")
+        if not self.expected:
+            lines.append("  (none)")
+        for name, cat in sorted(self.expected.items()):
+            lines.append(f"  {name}: {cat.count}")
+        unexp_total = sum(c.count for c in self.unexpected.values())
+        lines.append(f"Unexpected ({unexp_total} total):")
+        for name, cat in sorted(self.unexpected.items()):
+            lines.append(f"  {name}: {cat.count}")
+            for s in cat.samples:
+                lines.append(f"    [{s.exc_type}] {s.message}")
+        lines.append("")
+
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            f.write("\n".join(lines))
+        self.crash_report_path = path
+
     @property
     def expected_count(self) -> int:
         """Total number of expected errors across all categories."""
@@ -141,7 +198,7 @@ class ErrorTracker:
         return sum(c.count for c in self.unexpected.values())
 
 
-def build_error_tracker(max_samples: int = MAX_ERROR_SAMPLES, on_error=None) -> ErrorTracker:
+def build_error_tracker(max_samples: int = MAX_ERROR_SAMPLES, on_error=None, fail_fast: bool = False) -> ErrorTracker:
     """Create an ErrorTracker pre-loaded with common backend error patterns.
 
     Registers patterns for both SQLite and PostgreSQL contention
@@ -150,9 +207,10 @@ def build_error_tracker(max_samples: int = MAX_ERROR_SAMPLES, on_error=None) -> 
 
     :param max_samples: maximum samples to retain per category
     :param on_error: optional callback(expected, category, message)
+    :param fail_fast: if True, stop on first unexpected error
     :returns: a configured ErrorTracker
     """
-    tracker = ErrorTracker(max_samples=max_samples, on_error=on_error)
+    tracker = ErrorTracker(max_samples=max_samples, on_error=on_error, fail_fast=fail_fast)
     tracker.expect(Exception, "database is locked", "database_locked")
     tracker.expect(Exception, "deadlock detected", "deadlock")
     tracker.expect(ValueError, "Insufficient funds", "insufficient_funds")
@@ -212,7 +270,19 @@ def parse_stress_args(description: str) -> argparse.Namespace:
         default="sqlite",
         help="Database backend (default sqlite)",
     )
+    parser.add_argument(
+        "--engine",
+        choices=["psycopg", "asyncpg"],
+        default="psycopg",
+        help="Async engine for postgres (default psycopg)",
+    )
     parser.add_argument("--url", type=str, default=None, help="Override connection URL")
+    parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        default=False,
+        help="Stop on first unexpected error and write crash report",
+    )
     return parser.parse_args()
 
 
@@ -236,9 +306,15 @@ def build_backend_config(args: argparse.Namespace) -> BackendConfig:
     """
     if args.backend == "postgres":
         sync_url = args.url if args.url else _pool_url(_DEFAULT_POSTGRES_SYNC_URL, args.workers)
-        async_url = args.url if args.url else _pool_url(_DEFAULT_POSTGRES_ASYNC_URL, args.workers)
+        if args.url:
+            async_url = args.url
+        elif args.engine == "asyncpg":
+            async_url = _pool_url(_DEFAULT_POSTGRES_ASYNC_ASYNCPG_URL, args.workers)
+        else:
+            async_url = _pool_url(_DEFAULT_POSTGRES_ASYNC_PSYCOPG_URL, args.workers)
+        engine_label = f" [{args.engine}]" if args.engine == "asyncpg" else ""
         return BackendConfig(
-            name="PostgreSQL",
+            name=f"PostgreSQL{engine_label}",
             sync_url=sync_url,
             async_url=async_url,
             pk_col_type=_POSTGRES_PK,

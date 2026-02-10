@@ -21,11 +21,15 @@ Before starting any new feature or bug fix, perform these steps:
 
 ### Enabling Local Environment
 
-**Important**: When running tests or quality jobs, always enable the local python environment for this project first.
+**Important**: When running tests or quality jobs, always enable the
+local python environment for this project first.
 
 ```bash
 source ./.venv/bin/activate
 ```
+
+Examples under `examples/` have their own `.venv/` in their
+subdirectory. Use that venv when running examples.
 
 ### Testing
 
