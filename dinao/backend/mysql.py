@@ -23,7 +23,7 @@ class ConnectionMySQL(Connection):
         :param params: the values to bind to the execution of the given SQL
         :returns: a result set representing the query's results
         """
-        cursor = self._cnx.cursor()
+        cursor = self._cnx.cursor(buffered=True)
         self._execute(cursor, sql, params)
         try:
             yield ResultSet(cursor)
