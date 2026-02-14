@@ -6,6 +6,7 @@ import time
 from collections import deque
 from dataclasses import dataclass
 
+import requests
 from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
@@ -351,6 +352,77 @@ class Dashboard:
         )
 
     # -- lifecycle --------------------------------------------------------
+
+    def _build_waiting_panel(self, url, elapsed, attempt):
+        """Build a panel shown while waiting for the API to become ready.
+
+        :param url: the URL being polled
+        :param elapsed: seconds spent waiting so far
+        :param attempt: current attempt number
+        :returns: a Rich Panel
+        """
+        idx = int(elapsed * 4) % len(SPINNER_FRAMES)
+        spinner = SPINNER_FRAMES[idx]
+
+        txt = Text()
+        txt.append(f"  {spinner} ", style="bold bright_blue")
+        txt.append("Waiting for API at ", style="dim")
+        txt.append(url, style="cyan")
+        txt.append("\n\n")
+        txt.append("  Elapsed  ", style="dim")
+        txt.append(f"{elapsed:.1f}s", style="bold")
+        txt.append("   Attempts  ", style="dim")
+        txt.append(f"{attempt}", style="bold")
+
+        return Panel(
+            txt,
+            title="[bold bright_blue] FastAPI Stress Test [/]",
+            border_style="bright_blue",
+        )
+
+    def wait_for_api(self, url, timeout=30, interval=0.5):
+        """Block with a live display until the API responds.
+
+        :param url: base URL of the API service
+        :param timeout: maximum seconds to wait
+        :param interval: seconds between connection attempts
+        :raises SystemExit: if the API does not become available in time
+        """
+        start = time.monotonic()
+        attempt = 0
+        with Live(
+            self._build_waiting_panel(url, 0, attempt),
+            console=self.console,
+            refresh_per_second=REFRESH_PER_SECOND,
+            transient=True,
+        ) as live:
+            while (time.monotonic() - start) < timeout:
+                attempt += 1
+                try:
+                    resp = requests.get(
+                        f"{url}/items", timeout=interval
+                    )
+                    if resp.status_code < 500:
+                        return
+                except requests.ConnectionError:
+                    pass
+                elapsed = time.monotonic() - start
+                live.update(
+                    self._build_waiting_panel(url, elapsed, attempt)
+                )
+                time.sleep(interval)
+
+        self.console.print(
+            Panel(
+                Text(
+                    f"  API at {url} did not become ready "
+                    f"within {timeout}s.",
+                    style="bold red",
+                ),
+                border_style="red",
+            )
+        )
+        raise SystemExit(1)
 
     def _loop(self):
         """Run the Rich Live display loop until metrics.finished is set."""
