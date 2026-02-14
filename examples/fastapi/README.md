@@ -6,15 +6,15 @@ engine (asyncpg) and Pydantic models. To run this example you need:
 -   docker
 -   docker-compose
 
-Additionally you will want to install the python library `requests`
-to be able to run `tester.py`.
+Additionally you will want to install the python libraries `requests`
+and `rich` to be able to run `tester.py`.
 
 You simply need to run:
 
 ```
 $ ./build.sh
 $ docker compose up
-$ pip install requests
+$ pip install requests rich
 $ python3 tester.py
 ```
 
