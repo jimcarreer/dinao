@@ -47,12 +47,12 @@ _sync_binder = FunctionBinder()
 
 @_sync_binder.execute(_CREATE_TABLE)
 def _sync_create_table():
-    pass
+    pass  # pragma: no cover
 
 
 @_sync_binder.execute(_INSERT_ROW)
 def _sync_insert_row(row_id: int, value: str, category: int) -> int:
-    pass
+    pass  # pragma: no cover
 
 
 @_sync_binder.transaction()
@@ -63,22 +63,22 @@ def _sync_seed_data(rows: list):
 
 @_sync_binder.query(_SELECT_ALL)
 def _sync_stream_all() -> Generator[GenTestRow, None, None]:
-    pass
+    pass  # pragma: no cover
 
 
 @_sync_binder.query(_SELECT_BY_CAT)
 def _sync_stream_by_category(category: int) -> Generator[GenTestRow, None, None]:
-    pass
+    pass  # pragma: no cover
 
 
 @_sync_binder.query(_SELECT_CATS)
 def _sync_stream_categories() -> Generator[int, None, None]:
-    pass
+    pass  # pragma: no cover
 
 
 @_sync_binder.query(_COUNT_ROWS)
 def _sync_count_rows() -> int:
-    pass
+    pass  # pragma: no cover
 
 
 @_sync_binder.transaction()
@@ -93,12 +93,12 @@ _async_binder = AsyncFunctionBinder()
 
 @_async_binder.execute(_CREATE_TABLE)
 async def _async_create_table():
-    pass
+    pass  # pragma: no cover
 
 
 @_async_binder.execute(_INSERT_ROW)
 async def _async_insert_row(row_id: int, value: str, category: int) -> int:
-    pass
+    pass  # pragma: no cover
 
 
 @_async_binder.transaction()
@@ -109,22 +109,22 @@ async def _async_seed_data(rows: list):
 
 @_async_binder.query(_SELECT_ALL)
 async def _async_stream_all() -> AsyncGenerator[GenTestRow, None]:
-    pass
+    pass  # pragma: no cover
 
 
 @_async_binder.query(_SELECT_BY_CAT)
 async def _async_stream_by_category(category: int) -> AsyncGenerator[GenTestRow, None]:
-    pass
+    pass  # pragma: no cover
 
 
 @_async_binder.query(_SELECT_CATS)
 async def _async_stream_categories() -> AsyncGenerator[int, None]:
-    pass
+    pass  # pragma: no cover
 
 
 @_async_binder.query(_COUNT_ROWS)
 async def _async_count_rows() -> int:
-    pass
+    pass  # pragma: no cover
 
 
 @_async_binder.transaction()
