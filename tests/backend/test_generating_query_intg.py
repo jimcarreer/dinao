@@ -5,6 +5,8 @@ query) and generators inside ``@binder.transaction()`` scoped functions, with va
 early-break patterns, against every backend that implements real connection pooling.
 """
 
+import asyncio
+import gc
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from typing import AsyncGenerator, Generator
@@ -135,9 +137,16 @@ async def _async_run_in_transaction(work):
 # -- Fixtures -------------------------------------------------------------
 
 
+def _sync_pool_url(url):
+    """Append a pool-size-of-one parameter appropriate for the backend."""
+    if "mysql" in url or "mariadb" in url:
+        return f"{url}?pool_size=1"
+    return f"{url}?pool_max_conn=1"
+
+
 @contextmanager
 def _sync_db_lifecycle(url):
-    pool = create_connection_pool(url)
+    pool = create_connection_pool(_sync_pool_url(url))
     _sync_binder.pool = pool
     _sync_create_table()
     _sync_seed_data(_SEED_DATA)
@@ -161,6 +170,25 @@ def sync_db(request):
     url = request.getfixturevalue(request.param)
     with _sync_db_lifecycle(url):
         yield
+
+
+async def _async_settle_pool():
+    """Run GC and yield event-loop ticks so async generator finalizers complete."""
+    gc.collect()
+    for _ in range(10):
+        await asyncio.sleep(0)
+
+
+def _assert_async_pool_idle(pool):
+    """Assert every connection in the async pool has been returned to idle."""
+    inner = pool._pool
+    if hasattr(inner, "get_idle_size"):
+        # asyncpg
+        assert inner.get_idle_size() == inner.get_size()
+    elif hasattr(inner, "get_stats"): # pragma: no branch
+        # psycopg3 async
+        stats = inner.get_stats()
+        assert stats["pool_available"] == stats["pool_size"]
 
 
 @asynccontextmanager
@@ -341,6 +369,8 @@ async def test_async_nested_generators_inner_early_break(async_db_url):
                     break
         assert len(results) == 6
         assert await _async_count_rows() == 30
+        await _async_settle_pool()
+        _assert_async_pool_idle(_async_binder.pool)
 
 
 @pytest.mark.asyncio
@@ -354,6 +384,8 @@ async def test_async_nested_generators_outer_early_break(async_db_url):
             break
         assert len(results) == 10
         assert await _async_count_rows() == 30
+        await _async_settle_pool()
+        _assert_async_pool_idle(_async_binder.pool)
 
 
 @pytest.mark.asyncio
@@ -371,6 +403,8 @@ async def test_async_nested_generators_both_early_break(async_db_url):
             break
         assert len(results) == 2
         assert await _async_count_rows() == 30
+        await _async_settle_pool()
+        _assert_async_pool_idle(_async_binder.pool)
 
 
 # -- Async tests: generators inside transactions --------------------------
@@ -410,6 +444,8 @@ async def test_async_generator_in_transaction_early_break(async_db_url):
         assert len(results) == 5
         assert txn_count == 30
         assert await _async_count_rows() == 30
+        await _async_settle_pool()
+        _assert_async_pool_idle(_async_binder.pool)
 
 
 @pytest.mark.asyncio
@@ -451,3 +487,5 @@ async def test_async_nested_gen_in_transaction_both_early_break(async_db_url):
         assert len(results) == 2
         assert txn_count == 30
         assert await _async_count_rows() == 30
+        await _async_settle_pool()
+        _assert_async_pool_idle(_async_binder.pool)
