@@ -185,7 +185,7 @@ def _assert_async_pool_idle(pool):
     if hasattr(inner, "get_idle_size"):
         # asyncpg
         assert inner.get_idle_size() == inner.get_size()
-    elif hasattr(inner, "get_stats"): # pragma: no branch
+    elif hasattr(inner, "get_stats"):  # pragma: no branch
         # psycopg3 async
         stats = inner.get_stats()
         assert stats["pool_available"] == stats["pool_size"]
