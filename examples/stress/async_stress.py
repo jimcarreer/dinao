@@ -15,8 +15,6 @@ import uuid
 from datetime import datetime
 from uuid import UUID
 
-import async_dbi as dbi
-
 from common import (
     BackendConfig,
     StressResult,
@@ -28,7 +26,11 @@ from common import (
 
 from dashboard import Dashboard, LiveMetrics
 
+from dbis import load_async_dbi
+
 from dinao.backend import create_connection_pool
+
+dbi = None
 
 # -- async worker loop --------------------------------------------------
 
@@ -232,11 +234,12 @@ async def run(config: BackendConfig, seconds: int, workers: int, fail_fast: bool
     :param fail_fast: if True, stop on first unexpected error
     :returns: aggregated stress test results
     """
+    global dbi
+    dbi = load_async_dbi(config.backend)
     pool = create_connection_pool(config.async_url)
     dbi.binder.pool = pool
-    dbi.ROW_LOCK = config.row_lock
 
-    await dbi.init_schema(config.pk_col_type)
+    await dbi.init_schema()
     seed = [rand_account_data() for _ in range(100)]
     await dbi.bulk_create_accounts(seed)
 
@@ -274,9 +277,7 @@ async def run(config: BackendConfig, seconds: int, workers: int, fail_fast: bool
     result = StressResult(elapsed, total_ops, final_count, tracker)
     dashboard.print_summary(result)
     if tracker.crash_report_path:
-        dashboard.console.print(
-            f"[bold red]Fail-fast triggered. Crash report: {tracker.crash_report_path}[/]"
-        )
+        dashboard.console.print(f"[bold red]Fail-fast triggered. Crash report: {tracker.crash_report_path}[/]")
     await pool.dispose()
     return result
 

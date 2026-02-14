@@ -51,6 +51,7 @@ dataclass
 dataclasses
 datetime
 dbi
+dbis
 ddl
 deleter
 deque
@@ -89,6 +90,8 @@ ident
 idx
 impl
 init
+inno
+innodb
 inserter
 isclass
 iscoroutinefunction

@@ -1,14 +1,39 @@
 # Stress Test
 
 Concurrent stress test for DINAO backends with a
-live-updating terminal dashboard. Supports both SQLite
-(default) and PostgreSQL. Exercises every major binding
+live-updating terminal dashboard. Supports SQLite
+(default), PostgreSQL, MariaDB, and MySQL. Exercises
+every major binding
 feature (execute, query, transaction,
 Optional/list/Generator/AsyncGenerator/bool/int/dict
 returns) under heavy contention from multiple workers.
 The checker worker validates all seven `NATIVE_SINGLE`
 mapper types (`str`, `int`, `float`, `complex`, `bool`,
 `datetime`, `UUID`) via dedicated single-value queries.
+
+## DBI Layer
+
+The database interface is organized under the `dbis/`
+package with a dedicated module for each dialect and
+execution mode:
+
+```
+dbis/
+  __init__.py          # load_sync_dbi / load_async_dbi
+  sqlite_sync.py       # sync SQLite DBI
+  sqlite_async.py      # async SQLite DBI
+  postgres_sync.py     # sync PostgreSQL DBI
+  postgres_async.py    # async PostgreSQL DBI
+  mariadb_sync.py      # sync MariaDB DBI
+  mysql_sync.py        # sync MySQL DBI
+```
+
+Each module contains the full set of bound functions with
+dialect-specific SQL baked in (e.g. `SERIAL PRIMARY KEY`
+vs `INTEGER PRIMARY KEY AUTOINCREMENT`, `FOR UPDATE` row
+locking for PostgreSQL). The stress runners call
+`load_sync_dbi(backend)` or `load_async_dbi(backend)` to
+obtain the appropriate module at startup.
 
 ## Setup
 
@@ -22,10 +47,17 @@ pip install -r requirements.txt
 pip install -e ../../          # install dinao from source
 ```
 
-For PostgreSQL, start the database container:
+For PostgreSQL, MariaDB, or MySQL, start the database
+containers:
 
 ```bash
+# Start all containers
 docker compose up -d
+
+# Or start only what you need
+docker compose up -d postgres
+docker compose up -d mariadb
+docker compose up -d mysql
 ```
 
 ## Running
@@ -56,16 +88,30 @@ python async_stress.py --backend postgres
 python async_stress.py --backend postgres --engine asyncpg
 ```
 
+### MariaDB
+
+```bash
+# Sync (threaded) stress test
+python sync_stress.py --backend mariadb
+```
+
+### MySQL
+
+```bash
+# Sync (threaded) stress test
+python sync_stress.py --backend mysql
+```
+
 ### CLI Flags
 
-| Flag          | Default  | Description                        |
-|---------------|----------|------------------------------------|
-| `--seconds`   | 10       | How long to run                    |
-| `--workers`   | 3        | Number of workers per role         |
-| `--backend`   | sqlite   | Backend: `sqlite` or `postgres`    |
-| `--engine`    | psycopg  | Async engine: `psycopg`/`asyncpg` |
-| `--url`       | (auto)   | Override connection URL            |
-| `--fail-fast` | off      | Stop on first unexpected error     |
+| Flag          | Default  | Description                           |
+|---------------|----------|---------------------------------------|
+| `--seconds`   | 10       | How long to run                       |
+| `--workers`   | 3        | Number of workers per role            |
+| `--backend`   | sqlite   | `sqlite`/`postgres`/`mariadb`/`mysql` |
+| `--engine`    | psycopg  | Async engine: `psycopg`/`asyncpg`     |
+| `--url`       | (auto)   | Override connection URL               |
+| `--fail-fast` | off      | Stop on first unexpected error        |
 
 Each run spawns five worker roles (inserter, transferrer,
 reader, checker, deleter) multiplied by the worker count.
@@ -132,7 +178,11 @@ These errors are normal under concurrent write contention:
 - **deadlock** -- `deadlock detected` from concurrent
   row-level locking
 
-### Both backends
+### MariaDB / MySQL
+- **deadlock** -- `Deadlock found` from concurrent
+  row-level locking
+
+### All backends
 - **insufficient_funds** -- transfer rejected because the
   source account balance is too low
 - **missing_account** -- account deleted by another worker

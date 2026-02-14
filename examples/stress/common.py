@@ -12,12 +12,11 @@ from datetime import datetime, timezone
 
 MAX_ERROR_SAMPLES = 5
 
-_SQLITE_PK = "INTEGER PRIMARY KEY AUTOINCREMENT"
-_POSTGRES_PK = "SERIAL PRIMARY KEY"
-
 _DEFAULT_POSTGRES_SYNC_URL = "postgresql+psycopg://postgres:postgres@localhost:15432/dinao_stress"
 _DEFAULT_POSTGRES_ASYNC_PSYCOPG_URL = "postgresql+psycopg+async://postgres:postgres@localhost:15432/dinao_stress"
 _DEFAULT_POSTGRES_ASYNC_ASYNCPG_URL = "postgresql+asyncpg://postgres:postgres@localhost:15432/dinao_stress"
+_DEFAULT_MARIADB_SYNC_URL = "mariadb+mariadbconnector://stress:stress@127.0.0.1:13307/dinao_stress"
+_DEFAULT_MYSQL_SYNC_URL = "mysql+mysqlconnector://stress:stress@localhost:23307/dinao_stress"
 
 
 @dataclasses.dataclass
@@ -25,10 +24,9 @@ class BackendConfig:
     """Backend-specific configuration for a stress test run."""
 
     name: str
+    backend: str
     sync_url: str
     async_url: str
-    pk_col_type: str
-    row_lock: str
 
 
 @dataclasses.dataclass
@@ -213,6 +211,7 @@ def build_error_tracker(max_samples: int = MAX_ERROR_SAMPLES, on_error=None, fai
     tracker = ErrorTracker(max_samples=max_samples, on_error=on_error, fail_fast=fail_fast)
     tracker.expect(Exception, "database is locked", "database_locked")
     tracker.expect(Exception, "deadlock detected", "deadlock")
+    tracker.expect(Exception, "Deadlock found", "deadlock")
     tracker.expect(ValueError, "Insufficient funds", "insufficient_funds")
     tracker.expect(ValueError, "Both accounts must exist", "missing_account")
     return tracker
@@ -266,7 +265,7 @@ def parse_stress_args(description: str) -> argparse.Namespace:
     parser.add_argument("--workers", type=int, default=3, help="Workers per role (default 3)")
     parser.add_argument(
         "--backend",
-        choices=["sqlite", "postgres"],
+        choices=["sqlite", "postgres", "mariadb", "mysql"],
         default="sqlite",
         help="Database backend (default sqlite)",
     )
@@ -298,11 +297,23 @@ def _pool_url(base_url: str, workers: int) -> str:
     return f"{base_url}{sep}pool_min_conn=5&pool_max_conn={pool_max}"
 
 
+def _mysql_pool_url(base_url: str, workers: int) -> str:
+    """Append pool sizing query params to a MariaDB or MySQL URL.
+
+    :param base_url: base connection URL (no query string)
+    :param workers: number of workers per role
+    :returns: URL with pool_size param
+    """
+    pool_size = min(workers * 5 + 5, 32)
+    sep = "&" if "?" in base_url else "?"
+    return f"{base_url}{sep}pool_size={pool_size}"
+
+
 def build_backend_config(args: argparse.Namespace) -> BackendConfig:
     """Build a BackendConfig from parsed CLI arguments.
 
     :param args: parsed namespace from ``parse_stress_args``
-    :returns: a BackendConfig with URLs and pk_col_type set
+    :returns: a BackendConfig with URLs set for the chosen backend
     """
     if args.backend == "postgres":
         sync_url = args.url if args.url else _pool_url(_DEFAULT_POSTGRES_SYNC_URL, args.workers)
@@ -315,20 +326,34 @@ def build_backend_config(args: argparse.Namespace) -> BackendConfig:
         engine_label = f" [{args.engine}]" if args.engine == "asyncpg" else ""
         return BackendConfig(
             name=f"PostgreSQL{engine_label}",
+            backend="postgres",
             sync_url=sync_url,
             async_url=async_url,
-            pk_col_type=_POSTGRES_PK,
-            row_lock="FOR UPDATE",
+        )
+    if args.backend == "mariadb":
+        sync_url = args.url if args.url else _mysql_pool_url(_DEFAULT_MARIADB_SYNC_URL, args.workers)
+        return BackendConfig(
+            name="MariaDB",
+            backend="mariadb",
+            sync_url=sync_url,
+            async_url="",
+        )
+    if args.backend == "mysql":
+        sync_url = args.url if args.url else _mysql_pool_url(_DEFAULT_MYSQL_SYNC_URL, args.workers)
+        return BackendConfig(
+            name="MySQL",
+            backend="mysql",
+            sync_url=sync_url,
+            async_url="",
         )
     db_tag = uuid.uuid4().hex[:8]
     sync_path = f"/tmp/dinao_sync_stress_{db_tag}.db"
     async_path = f"/tmp/dinao_async_stress_{db_tag}.db"
     return BackendConfig(
         name="SQLite",
+        backend="sqlite",
         sync_url=args.url if args.url else f"sqlite3://{sync_path}",
         async_url=args.url if args.url else f"sqlite3+aiosqlite://{async_path}",
-        pk_col_type=_SQLITE_PK,
-        row_lock="",
     )
 
 

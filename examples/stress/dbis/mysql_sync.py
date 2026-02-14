@@ -1,9 +1,9 @@
-"""Synchronous database interface for the stress example.
+"""Synchronous MySQL database interface for the stress example.
 
-Defines bound functions against a multi-table schema and exercises
-every major feature of the sync FunctionBinder: execute, query,
-transaction, Optional returns, list returns, Generator streaming,
-dict returns, bool returns, and direct connection access.
+Defines bound functions against a multi-table schema using MySQL
+dialect.  Exercises every major feature of the sync FunctionBinder:
+execute, query, transaction, Optional returns, list returns, Generator
+streaming, dict returns, bool returns, and direct connection access.
 """
 
 from datetime import datetime
@@ -15,7 +15,6 @@ from common import Account, Transfer, rand_transfer_ref
 from dinao.binding import FunctionBinder
 
 binder = FunctionBinder()
-ROW_LOCK = ""
 
 
 # -- DDL ----------------------------------------------------------------
@@ -35,42 +34,44 @@ def drop_accounts_table():
 
 @binder.execute(
     "CREATE TABLE IF NOT EXISTS accounts ("
-    "  id !{pk_col_type},"
-    "  name TEXT UNIQUE NOT NULL,"
+    "  id INT AUTO_INCREMENT PRIMARY KEY,"
+    "  name VARCHAR(255) UNIQUE NOT NULL,"
     "  balance INTEGER NOT NULL DEFAULT 0,"
     "  ref_id TEXT NOT NULL,"
-    "  interest_rate REAL NOT NULL DEFAULT 0.0,"
-    "  risk_score TEXT NOT NULL DEFAULT '(0+0j)',"
+    "  interest_rate DOUBLE NOT NULL DEFAULT 0.0,"
+    "  risk_score TEXT NOT NULL,"
     "  created_at TEXT NOT NULL"
-    ")"
+    ") ENGINE=InnoDB"
 )
-def create_accounts_table(pk_col_type: str):
+def create_accounts_table():
     """Create the accounts table."""
     pass
 
 
 @binder.execute(
     "CREATE TABLE IF NOT EXISTS transfers ("
-    "  id !{pk_col_type},"
-    "  from_account INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,"
-    "  to_account   INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,"
+    "  id INT AUTO_INCREMENT PRIMARY KEY,"
+    "  from_account INTEGER NOT NULL,"
+    "  to_account   INTEGER NOT NULL,"
     "  amount       INTEGER NOT NULL,"
     "  ref_id       TEXT NOT NULL,"
-    "  created_at   TEXT NOT NULL"
-    ")"
+    "  created_at   TEXT NOT NULL,"
+    "  FOREIGN KEY (from_account) REFERENCES accounts(id) ON DELETE CASCADE,"
+    "  FOREIGN KEY (to_account) REFERENCES accounts(id) ON DELETE CASCADE"
+    ") ENGINE=InnoDB"
 )
-def create_transfers_table(pk_col_type: str):
+def create_transfers_table():
     """Create the transfers table."""
     pass
 
 
 @binder.transaction()
-def init_schema(pk_col_type: str):
+def init_schema():
     """Drop and recreate all tables inside a single transaction."""
     drop_transfers_table()
     drop_accounts_table()
-    create_accounts_table(pk_col_type)
-    create_transfers_table(pk_col_type)
+    create_accounts_table()
+    create_transfers_table()
 
 
 # -- Accounts -----------------------------------------------------------
@@ -80,9 +81,7 @@ def init_schema(pk_col_type: str):
     "INSERT INTO accounts (name, balance, ref_id, interest_rate, risk_score, created_at) "
     "VALUES (#{name}, #{balance}, #{ref_id}, #{interest_rate}, #{risk_score}, #{created_at})"
 )
-def insert_account(
-    name: str, balance: int, ref_id: str, interest_rate: float, risk_score: str, created_at: str
-) -> int:
+def insert_account(name: str, balance: int, ref_id: str, interest_rate: float, risk_score: str, created_at: str) -> int:
     """Insert an account, return rows affected."""
     pass
 
@@ -98,10 +97,10 @@ def get_account(account_id: int) -> Optional[Account]:
 
 @binder.query(
     "SELECT id AS account_id, name, balance, ref_id, interest_rate, risk_score, created_at "
-    "FROM accounts WHERE name = #{name} !{row_lock}"
+    "FROM accounts WHERE name = #{name} FOR UPDATE"
 )
-def get_account_by_name(name: str, row_lock: str = "") -> Optional[Account]:
-    """Get a single account by name, or None."""
+def get_account_by_name(name: str) -> Optional[Account]:
+    """Get a single account by name with row-level locking."""
     pass
 
 
@@ -233,8 +232,8 @@ def transfer(from_name: str, to_name: str, amount: int) -> dict:
 
     Returns a dict with the resulting balances.
     """
-    src = get_account_by_name(from_name, row_lock=ROW_LOCK)
-    dst = get_account_by_name(to_name, row_lock=ROW_LOCK)
+    src = get_account_by_name(from_name)
+    dst = get_account_by_name(to_name)
     if src is None or dst is None:
         raise ValueError("Both accounts must exist")
     if src.balance < amount:

@@ -33,6 +33,10 @@ subdirectory. Use that venv when running examples.
 
 ### Testing
 
+When changes are exclusively within the `examples/` folder, unit
+tests may be skipped. Linting and spelling checks must still be
+run.
+
 ```bash
 # Run all tests (requires docker containers for integration tests)
 pytest

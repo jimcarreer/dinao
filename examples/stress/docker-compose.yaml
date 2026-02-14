@@ -7,3 +7,23 @@ services:
       POSTGRES_DB: dinao_stress
     ports:
       - "15432:5432"
+
+  mariadb:
+    image: mariadb:latest
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_USER: stress
+      MARIADB_PASSWORD: stress
+      MARIADB_DATABASE: dinao_stress
+    ports:
+      - "13307:3306"
+
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: stress
+      MYSQL_PASSWORD: stress
+      MYSQL_DATABASE: dinao_stress
+    ports:
+      - "23307:3306"
