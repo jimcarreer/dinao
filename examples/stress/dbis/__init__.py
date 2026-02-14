@@ -5,11 +5,13 @@ SQL tailored to the dialect, eliminating the need for runtime template
 substitution of dialect-specific fragments.
 """
 
-from . import postgres_async, postgres_sync, sqlite_async, sqlite_sync
+from . import mariadb_sync, mysql_sync, postgres_async, postgres_sync, sqlite_async, sqlite_sync
 
 _SYNC_BACKENDS = {
     "sqlite": sqlite_sync,
     "postgres": postgres_sync,
+    "mariadb": mariadb_sync,
+    "mysql": mysql_sync,
 }
 
 _ASYNC_BACKENDS = {
@@ -21,7 +23,8 @@ _ASYNC_BACKENDS = {
 def load_sync_dbi(backend: str):
     """Return the synchronous DBI module for the named backend.
 
-    :param backend: backend name (``"sqlite"`` or ``"postgres"``)
+    :param backend: backend name (e.g. ``"sqlite"``, ``"postgres"``,
+        ``"mariadb"``, ``"mysql"``)
     :returns: the dialect-specific sync DBI module
     """
     return _SYNC_BACKENDS[backend]

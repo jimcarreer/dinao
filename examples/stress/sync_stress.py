@@ -240,9 +240,7 @@ def run(config: BackendConfig, seconds: int, workers: int, fail_fast: bool = Fal
     result = StressResult(elapsed, total_ops, final_count, tracker)
     dashboard.print_summary(result)
     if tracker.crash_report_path:
-        dashboard.console.print(
-            f"[bold red]Fail-fast triggered. Crash report: {tracker.crash_report_path}[/]"
-        )
+        dashboard.console.print(f"[bold red]Fail-fast triggered. Crash report: {tracker.crash_report_path}[/]")
     pool.dispose()
     return result
 

@@ -376,6 +376,4 @@ class Dashboard:
 
         verdict = "PASS" if unexp == 0 else "FAIL"
         v_style = "bold green" if unexp == 0 else "bold red"
-        self.console.print(
-            Panel(txt, title=f"[{v_style}] {verdict} [/]", border_style=v_style)
-        )
+        self.console.print(Panel(txt, title=f"[{v_style}] {verdict} [/]", border_style=v_style))

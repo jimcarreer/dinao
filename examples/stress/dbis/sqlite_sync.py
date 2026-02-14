@@ -79,9 +79,7 @@ def init_schema():
     "INSERT INTO accounts (name, balance, ref_id, interest_rate, risk_score, created_at) "
     "VALUES (#{name}, #{balance}, #{ref_id}, #{interest_rate}, #{risk_score}, #{created_at})"
 )
-def insert_account(
-    name: str, balance: int, ref_id: str, interest_rate: float, risk_score: str, created_at: str
-) -> int:
+def insert_account(name: str, balance: int, ref_id: str, interest_rate: float, risk_score: str, created_at: str) -> int:
     """Insert an account, return rows affected."""
     pass
 

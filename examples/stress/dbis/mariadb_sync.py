@@ -1,6 +1,6 @@
-"""Synchronous PostgreSQL database interface for the stress example.
+"""Synchronous MariaDB database interface for the stress example.
 
-Defines bound functions against a multi-table schema using PostgreSQL
+Defines bound functions against a multi-table schema using MariaDB
 dialect.  Exercises every major feature of the sync FunctionBinder:
 execute, query, transaction, Optional returns, list returns, Generator
 streaming, dict returns, bool returns, and direct connection access.
@@ -34,14 +34,14 @@ def drop_accounts_table():
 
 @binder.execute(
     "CREATE TABLE IF NOT EXISTS accounts ("
-    "  id SERIAL PRIMARY KEY,"
-    "  name TEXT UNIQUE NOT NULL,"
+    "  id INT AUTO_INCREMENT PRIMARY KEY,"
+    "  name VARCHAR(255) UNIQUE NOT NULL,"
     "  balance INTEGER NOT NULL DEFAULT 0,"
     "  ref_id TEXT NOT NULL,"
-    "  interest_rate REAL NOT NULL DEFAULT 0.0,"
-    "  risk_score TEXT NOT NULL DEFAULT '(0+0j)',"
+    "  interest_rate DOUBLE NOT NULL DEFAULT 0.0,"
+    "  risk_score TEXT NOT NULL,"
     "  created_at TEXT NOT NULL"
-    ")"
+    ") ENGINE=InnoDB"
 )
 def create_accounts_table():
     """Create the accounts table."""
@@ -50,13 +50,15 @@ def create_accounts_table():
 
 @binder.execute(
     "CREATE TABLE IF NOT EXISTS transfers ("
-    "  id SERIAL PRIMARY KEY,"
-    "  from_account INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,"
-    "  to_account   INTEGER NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,"
+    "  id INT AUTO_INCREMENT PRIMARY KEY,"
+    "  from_account INTEGER NOT NULL,"
+    "  to_account   INTEGER NOT NULL,"
     "  amount       INTEGER NOT NULL,"
     "  ref_id       TEXT NOT NULL,"
-    "  created_at   TEXT NOT NULL"
-    ")"
+    "  created_at   TEXT NOT NULL,"
+    "  FOREIGN KEY (from_account) REFERENCES accounts(id) ON DELETE CASCADE,"
+    "  FOREIGN KEY (to_account) REFERENCES accounts(id) ON DELETE CASCADE"
+    ") ENGINE=InnoDB"
 )
 def create_transfers_table():
     """Create the transfers table."""
