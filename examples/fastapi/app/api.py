@@ -39,7 +39,7 @@ async def log_requests(request: Request, call_next):
     return response
 
 
-@app.get("/")
+@app.get("/items")
 async def listing(page: int = 1, size: int = 10, search: str = "%"):
     if page < 1:
         return make_error("Bad page number")
@@ -50,7 +50,7 @@ async def listing(page: int = 1, size: int = 10, search: str = "%"):
     return JSONResponse({"results": [m.model_dump() for m in res]})
 
 
-@app.post("/")
+@app.post("/items")
 async def update(request: Request):
     payload = await request.json()
     if not payload:
@@ -66,6 +66,6 @@ async def update(request: Request):
     return JSONResponse({"updated": updated})
 
 
-@app.get("/summed")
+@app.get("/items/summed")
 async def summed(search: str = "%", size: int = 10):
     return JSONResponse(await dbi.sum_for(search, size))
