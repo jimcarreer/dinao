@@ -12,6 +12,8 @@ import requests
 
 from dashboard import Dashboard, LiveMetrics
 
+API_BASE = "http://localhost:5001"
+
 
 class Smacker(threading.Thread):
     """Base class for API stress-test worker threads."""
@@ -26,7 +28,7 @@ class Smacker(threading.Thread):
         """
         super().__init__()
         self.shutdown_flag = threading.Event()
-        self.api = "http://localhost:5001/items"
+        self.api = f"{API_BASE}/items"
         self.worker_num = worker_num
         self.metrics = metrics
 
@@ -103,8 +105,10 @@ def main():
     action_names = ["POST /items", "GET /items", "GET /summed"]
     total_workers = workers * len(action_names)
 
-    metrics = LiveMetrics(action_names, total_workers, "http://localhost:5001/items")
+    metrics = LiveMetrics(action_names, total_workers, f"{API_BASE}/items")
     dashboard = Dashboard(metrics)
+
+    dashboard.wait_for_api(API_BASE)
 
     smackers = []
     try:
