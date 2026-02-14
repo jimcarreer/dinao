@@ -12,9 +12,6 @@ from datetime import datetime, timezone
 
 MAX_ERROR_SAMPLES = 5
 
-_SQLITE_PK = "INTEGER PRIMARY KEY AUTOINCREMENT"
-_POSTGRES_PK = "SERIAL PRIMARY KEY"
-
 _DEFAULT_POSTGRES_SYNC_URL = "postgresql+psycopg://postgres:postgres@localhost:15432/dinao_stress"
 _DEFAULT_POSTGRES_ASYNC_PSYCOPG_URL = "postgresql+psycopg+async://postgres:postgres@localhost:15432/dinao_stress"
 _DEFAULT_POSTGRES_ASYNC_ASYNCPG_URL = "postgresql+asyncpg://postgres:postgres@localhost:15432/dinao_stress"
@@ -25,10 +22,9 @@ class BackendConfig:
     """Backend-specific configuration for a stress test run."""
 
     name: str
+    backend: str
     sync_url: str
     async_url: str
-    pk_col_type: str
-    row_lock: str
 
 
 @dataclasses.dataclass
@@ -302,7 +298,7 @@ def build_backend_config(args: argparse.Namespace) -> BackendConfig:
     """Build a BackendConfig from parsed CLI arguments.
 
     :param args: parsed namespace from ``parse_stress_args``
-    :returns: a BackendConfig with URLs and pk_col_type set
+    :returns: a BackendConfig with URLs set for the chosen backend
     """
     if args.backend == "postgres":
         sync_url = args.url if args.url else _pool_url(_DEFAULT_POSTGRES_SYNC_URL, args.workers)
@@ -315,20 +311,18 @@ def build_backend_config(args: argparse.Namespace) -> BackendConfig:
         engine_label = f" [{args.engine}]" if args.engine == "asyncpg" else ""
         return BackendConfig(
             name=f"PostgreSQL{engine_label}",
+            backend="postgres",
             sync_url=sync_url,
             async_url=async_url,
-            pk_col_type=_POSTGRES_PK,
-            row_lock="FOR UPDATE",
         )
     db_tag = uuid.uuid4().hex[:8]
     sync_path = f"/tmp/dinao_sync_stress_{db_tag}.db"
     async_path = f"/tmp/dinao_async_stress_{db_tag}.db"
     return BackendConfig(
         name="SQLite",
+        backend="sqlite",
         sync_url=args.url if args.url else f"sqlite3://{sync_path}",
         async_url=args.url if args.url else f"sqlite3+aiosqlite://{async_path}",
-        pk_col_type=_SQLITE_PK,
-        row_lock="",
     )
 
 

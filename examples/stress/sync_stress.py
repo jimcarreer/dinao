@@ -25,9 +25,11 @@ from common import (
 
 from dashboard import Dashboard, LiveMetrics
 
+from dbis import load_sync_dbi
+
 from dinao.backend import create_connection_pool
 
-import sync_dbi as dbi
+dbi = None
 
 # -- worker base --------------------------------------------------------
 
@@ -192,11 +194,12 @@ def run(config: BackendConfig, seconds: int, workers: int, fail_fast: bool = Fal
     :param fail_fast: if True, stop on first unexpected error
     :returns: aggregated stress test results
     """
+    global dbi
+    dbi = load_sync_dbi(config.backend)
     pool = create_connection_pool(config.sync_url)
     dbi.binder.pool = pool
-    dbi.ROW_LOCK = config.row_lock
 
-    dbi.init_schema(config.pk_col_type)
+    dbi.init_schema()
     seed = [rand_account_data() for _ in range(100)]
     dbi.bulk_create_accounts(seed)
 

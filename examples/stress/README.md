@@ -10,6 +10,28 @@ The checker worker validates all seven `NATIVE_SINGLE`
 mapper types (`str`, `int`, `float`, `complex`, `bool`,
 `datetime`, `UUID`) via dedicated single-value queries.
 
+## DBI Layer
+
+The database interface is organized under the `dbis/`
+package with a dedicated module for each dialect and
+execution mode:
+
+```
+dbis/
+  __init__.py          # load_sync_dbi / load_async_dbi
+  sqlite_sync.py       # sync SQLite DBI
+  sqlite_async.py      # async SQLite DBI
+  postgres_sync.py     # sync PostgreSQL DBI
+  postgres_async.py    # async PostgreSQL DBI
+```
+
+Each module contains the full set of bound functions with
+dialect-specific SQL baked in (e.g. `SERIAL PRIMARY KEY`
+vs `INTEGER PRIMARY KEY AUTOINCREMENT`, `FOR UPDATE` row
+locking for PostgreSQL). The stress runners call
+`load_sync_dbi(backend)` or `load_async_dbi(backend)` to
+obtain the appropriate module at startup.
+
 ## Setup
 
 Create a virtual environment for this example:
