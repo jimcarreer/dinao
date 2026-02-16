@@ -1,5 +1,3 @@
-import dataclasses
-
 from pydantic import BaseModel
 
 from dinao.binding import AsyncFunctionBinder
@@ -10,16 +8,6 @@ class MyModel(BaseModel):
 
     name: str
     value: int
-
-
-@binder.execute(
-    "CREATE TABLE IF NOT EXISTS data ( "
-    "  name VARCHAR(256) PRIMARY KEY, "
-    "  value INTEGER DEFAULT 0 "
-    ")"
-)
-async def init_db():
-    pass
 
 
 @binder.execute(

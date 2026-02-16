@@ -93,6 +93,7 @@ ident
 idx
 impl
 importlib
+ini
 init
 inno
 innodb
@@ -152,6 +153,7 @@ postgres
 postgresql
 pre
 pragma
+pre-populate
 preflight
 printables
 psql
