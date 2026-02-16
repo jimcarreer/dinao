@@ -1,16 +1,10 @@
 import asyncio
+import os
 
-import dbi
-from dinao.backend import create_connection_pool
+from dinao.migration import AsyncMigrationRunner
 
 con_url = "postgresql+asyncpg://test_user:test_pass@postgres:5432/test_db"
-db_pool = create_connection_pool(con_url)
-dbi.binder.pool = db_pool
+script_dir = os.path.join(os.path.dirname(__file__), "migrations")
+runner = AsyncMigrationRunner(con_url, script_dir)
 
-
-async def run_init():
-    await dbi.init_db()
-    await db_pool.dispose()
-
-
-asyncio.run(run_init())
+asyncio.run(runner.upgrade())

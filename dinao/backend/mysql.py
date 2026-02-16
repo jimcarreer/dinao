@@ -56,7 +56,7 @@ class ConnectionPoolMySQL(ConnectionPool):
         """
         super().__init__(db_url)
         try:
-            from mysql.connector.pooling import MySQLConnectionPool
+            from mysql.connector.pooling import MySQLConnectionPool  # pylint: disable=import-outside-toplevel
         except ModuleNotFoundError:  # pragma: no cover
             issue = "Module mysql-connector-python not installed, cannot create connection pool"
             raise BackendNotInstalledError(issue)

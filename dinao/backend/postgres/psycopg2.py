@@ -24,7 +24,7 @@ class ConnectionPoolPSQLPsycopg2(ConnectionPoolPSQL):
         """
         super().__init__(db_url)
         try:
-            import psycopg2.pool
+            import psycopg2.pool  # pylint: disable=import-outside-toplevel
         except ModuleNotFoundError:  # pragma: no cover
             issue = "Module psycopg2 not installed, cannot create connection pool"
             raise BackendNotInstalledError(issue)

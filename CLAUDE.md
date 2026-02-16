@@ -58,6 +58,7 @@ docker compose -f tests/docker-compose.yaml up -d
 ```bash
 # Run all checks
 flake8 ./dinao/ ./tests/
+pylint ./dinao/ ./tests/
 black --check --diff ./dinao/ ./tests/
 pyspelling -v
 
@@ -83,9 +84,18 @@ pip install -e ".[dev]"
   - Class based / Object oriented programming preferred
   - Common functionality between features should (as much as possible) be refactored up the class hierarchy, with 
     implementation specific functionality staying in child classes.
-  - Never import into the body of a function, class or anywhere besides the top of a file
-    - There is exactly one exception to this rule at this time: when importing the driver module for a given database
-      backend
+  - Never import into the body of a function, class or
+    anywhere besides the top of a file
+    - The only exception is importing **third-party database
+      driver packages** (e.g. `psycopg2`, `mariadb`,
+      `aiosqlite`, `asyncpg`) inside `dinao/backend/`
+      implementation modules and `tests/backend/conftest.py`
+      fixtures. This does **not** include importing dinao's
+      own modules or standard library modules — those must
+      always be at the top of the file.
+    - This applies to test code too
+    - Enforced by pylint `C0415`; legitimate exceptions use
+      `# pylint: disable=import-outside-toplevel` inline
   - Prefer early returns to denest code; guard clauses at the top of a
     function or block are cleaner than deeply nested if/else trees.
   - Do not use `TYPE_CHECKING` to work around circular imports;

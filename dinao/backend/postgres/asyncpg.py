@@ -166,7 +166,7 @@ class AsyncConnectionPoolPSQLAsyncpg(AsyncConnectionPoolPSQL):
         """
         super().__init__(db_url)
         try:
-            import asyncpg  # noqa: F401
+            import asyncpg  # noqa: F401  pylint: disable=import-outside-toplevel
         except ModuleNotFoundError:  # pragma: no cover
             issue = "Module asyncpg not installed, cannot create async connection pool"
             raise BackendNotInstalledError(issue)
@@ -216,7 +216,7 @@ class AsyncConnectionPoolPSQLAsyncpg(AsyncConnectionPoolPSQL):
         async with self._pool_lock:
             if self._pool is not None:  # pragma: no cover
                 return
-            import asyncpg
+            import asyncpg  # pylint: disable=import-outside-toplevel
 
             self._pool = await asyncpg.create_pool(**self._pool_kwargs)
 
