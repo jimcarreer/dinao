@@ -1,7 +1,7 @@
 """Shared base class for sync and async migration runners."""
 
-import asyncio
 import importlib.util
+import inspect
 import traceback
 from typing import List, Optional, Set
 from urllib.parse import urlparse
@@ -74,7 +74,7 @@ class MigrationRunnerBase:
         :raises ScriptValidationError: if the upgrade function is missing or not a coroutine
         """
         upgrade = getattr(module, "upgrade", None)
-        if upgrade is None or not asyncio.iscoroutinefunction(upgrade):
+        if upgrade is None or not inspect.iscoroutinefunction(upgrade):
             raise ScriptValidationError(f"Migration script '{script.name}' must define an async 'upgrade' function")
 
     @staticmethod
