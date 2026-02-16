@@ -86,6 +86,7 @@ pip install -e ".[dev]"
   - Never import into the body of a function, class or anywhere besides the top of a file
     - There is exactly one exception to this rule at this time: when importing the driver module for a given database
       backend
+    - This applies to test code too
   - Prefer early returns to denest code; guard clauses at the top of a
     function or block are cleaner than deeply nested if/else trees.
   - Do not use `TYPE_CHECKING` to work around circular imports;

@@ -144,12 +144,24 @@ class TestAsyncMigrationRunnerUpgrade:
         """Verify the bundled async sample scripts work end-to-end."""
         import tempfile
 
+        from dinao.backend import create_connection_pool
+
         sample_dir = os.path.join(os.path.dirname(__file__), "async_scripts")
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "test.db")
             runner = AsyncMigrationRunner(f"sqlite3+aiosqlite://{db_path}", sample_dir)
             await runner.upgrade()
             await runner.upgrade()
+            # Verify the seed data was inserted by the seed migration
+            pool = create_connection_pool(f"sqlite3+aiosqlite://{db_path}")
+            cnx = await pool.lease()
+            async with cnx.query("SELECT id, name, email FROM users ORDER BY id") as results:
+                rows = await results.fetchall()
+            await pool.release(cnx)
+            await pool.dispose()
+            assert len(rows) == 2
+            assert rows[0] == (1, "alice", "alice@example.com")
+            assert rows[1] == (2, "bob", "bob@example.com")
 
     @pytest.mark.asyncio
     async def test_upgrade_updates_state(self, tmp_path):

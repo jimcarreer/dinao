@@ -28,6 +28,19 @@ def _write_sync_scripts(scripts_dir):
             "    assert len(rows) == 1\n"
             '    assert rows[0]["name"] == "admin"\n'
         )
+    with open(os.path.join(scripts_dir, "20240103_001_seed_users.py"), "w") as f:
+        f.write(
+            "def upgrade(cnx):\n"
+            '    cnx.execute("INSERT INTO users (id, name, email) VALUES (#{id}, #{name}, #{email})",\n'
+            '               id=2, name="alice", email="alice@test.com")\n'
+            '    cnx.execute("INSERT INTO users (id, name, email) VALUES (#{id}, #{name}, #{email})",\n'
+            '               id=3, name="bob", email="bob@test.com")\n'
+            '    rows = cnx.query("SELECT id, name, email FROM users ORDER BY id")\n'
+            "    assert len(rows) == 3\n"
+            '    assert rows[0]["name"] == "admin"\n'
+            '    assert rows[1]["name"] == "alice"\n'
+            '    assert rows[2]["name"] == "bob"\n'
+        )
 
 
 def _write_async_scripts(scripts_dir):
@@ -48,6 +61,19 @@ def _write_async_scripts(scripts_dir):
             '    rows = await cnx.query("SELECT id, name FROM users")\n'
             "    assert len(rows) == 1\n"
             '    assert rows[0]["name"] == "admin"\n'
+        )
+    with open(os.path.join(scripts_dir, "20240103_001_seed_users.py"), "w") as f:
+        f.write(
+            "async def upgrade(cnx):\n"
+            '    await cnx.execute("INSERT INTO users (id, name, email) VALUES (#{id}, #{name}, #{email})",\n'
+            '                     id=2, name="alice", email="alice@test.com")\n'
+            '    await cnx.execute("INSERT INTO users (id, name, email) VALUES (#{id}, #{name}, #{email})",\n'
+            '                     id=3, name="bob", email="bob@test.com")\n'
+            '    rows = await cnx.query("SELECT id, name, email FROM users ORDER BY id")\n'
+            "    assert len(rows) == 3\n"
+            '    assert rows[0]["name"] == "admin"\n'
+            '    assert rows[1]["name"] == "alice"\n'
+            '    assert rows[2]["name"] == "bob"\n'
         )
 
 

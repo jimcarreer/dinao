@@ -226,6 +226,8 @@ class TestMigrationRunnerUpgrade:
         """Verify the bundled sample scripts work end-to-end."""
         import tempfile
 
+        from dinao.backend import create_connection_pool
+
         sample_dir = os.path.join(os.path.dirname(__file__), "sample_scripts")
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "test.db")
@@ -233,3 +235,13 @@ class TestMigrationRunnerUpgrade:
             runner.upgrade()
             # Run again to verify idempotency
             runner.upgrade()
+            # Verify the seed data was inserted by the seed migration
+            pool = create_connection_pool(f"sqlite3://{db_path}")
+            cnx = pool.lease()
+            with cnx.query("SELECT id, name, email FROM users ORDER BY id") as results:
+                rows = results.fetchall()
+            pool.release(cnx)
+            pool.dispose()
+            assert len(rows) == 2
+            assert rows[0] == (1, "alice", "alice@example.com")
+            assert rows[1] == (2, "bob", "bob@example.com")
