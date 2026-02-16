@@ -63,6 +63,7 @@ dir
 dml
 dicts
 dinao
+dinao's
 dirname
 docstrings
 dst
@@ -151,10 +152,11 @@ pem
 perf
 postgres
 postgresql
-pre
 pragma
+pre
 pre-populate
 preflight
+pylint
 printables
 psql
 psycopg
@@ -204,6 +206,7 @@ timestamptz
 tls
 tmp
 todo
+toplevel
 tox
 traceback
 transferrer
