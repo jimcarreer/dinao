@@ -57,7 +57,10 @@ deleter
 deque
 dbname
 denest
+desc
 dev
+dir
+dml
 dicts
 dinao
 dirname
@@ -89,12 +92,14 @@ https
 ident
 idx
 impl
+importlib
 init
 inno
 innodb
 inserter
 isclass
 iscoroutinefunction
+isdir
 isinstance
 isoformat
 issubclass
@@ -105,7 +110,9 @@ jsonify
 kwarg
 kwargs
 len
+lexicographically
 lifecycle
+listdir
 localhost
 makedirs
 mappable
@@ -171,6 +178,7 @@ sig
 sigint
 sigterm
 socio
+sp
 sql
 sqlite
 src
@@ -190,6 +198,7 @@ sys
 templated
 templating
 tid
+timestamptz
 tls
 tmp
 todo
@@ -202,6 +211,7 @@ unexp
 untrusted
 upsert
 url
+util
 urllib
 urlparse
 utc
