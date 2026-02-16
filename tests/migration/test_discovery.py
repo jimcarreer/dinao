@@ -1,6 +1,7 @@
 """Tests for migration script discovery."""
 
 import os
+import re
 
 from dinao.migration.discovery import DEFAULT_PATTERN, MigrationScript, ScriptDiscovery
 from dinao.migration.errors import DiscoveryError
@@ -94,8 +95,6 @@ def test_migration_script_path(tmp_path):
 
 def test_default_pattern_value():
     """Verify the default pattern matches the expected format."""
-    import re
-
     pattern = re.compile(DEFAULT_PATTERN)
     assert pattern.match("20240315_001_add_users.py")
     assert pattern.match("20241231_999_long_description_here.py")

@@ -1,7 +1,9 @@
 """Tests for the asynchronous AsyncMigrationRunner."""
 
 import os
+import tempfile
 
+from dinao.backend import create_connection_pool
 from dinao.migration.errors import MigrationInProgressError, RevisionError
 from dinao.migration.runner.async_ import AsyncMigrationRunner
 
@@ -48,8 +50,6 @@ class TestAsyncMigrationRunnerUpgrade:
         )
         runner = AsyncMigrationRunner(f"sqlite3+aiosqlite://{db_path}", str(scripts_dir))
         await runner.upgrade()
-        from dinao.backend import create_connection_pool
-
         pool = create_connection_pool(f"sqlite3+aiosqlite://{db_path}")
         cnx = await pool.lease()
         async with cnx.query("SELECT revision_name, status FROM dinao_migration_revisions") as results:
@@ -72,8 +72,6 @@ class TestAsyncMigrationRunnerUpgrade:
         runner = AsyncMigrationRunner(f"sqlite3+aiosqlite://{db_path}", str(scripts_dir))
         with pytest.raises(RevisionError, match="async failure"):
             await runner.upgrade()
-        from dinao.backend import create_connection_pool
-
         pool = create_connection_pool(f"sqlite3+aiosqlite://{db_path}")
         cnx = await pool.lease()
         async with cnx.query("SELECT status, error_type FROM dinao_migration_revisions") as results:
@@ -127,8 +125,6 @@ class TestAsyncMigrationRunnerUpgrade:
             'async def upgrade(cnx):\n    await cnx.execute("CREATE TABLE t2 (id INTEGER)")\n'
         )
         await runner.upgrade()
-        from dinao.backend import create_connection_pool
-
         pool = create_connection_pool(f"sqlite3+aiosqlite://{db_path}")
         cnx = await pool.lease()
         async with cnx.query("SELECT revision_name FROM dinao_migration_revisions ORDER BY revision_name") as results:
@@ -142,10 +138,6 @@ class TestAsyncMigrationRunnerUpgrade:
     @pytest.mark.asyncio
     async def test_async_sample_scripts(self):
         """Verify the bundled async sample scripts work end-to-end."""
-        import tempfile
-
-        from dinao.backend import create_connection_pool
-
         sample_dir = os.path.join(os.path.dirname(__file__), "async_scripts")
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "test.db")
@@ -174,8 +166,6 @@ class TestAsyncMigrationRunnerUpgrade:
         )
         runner = AsyncMigrationRunner(f"sqlite3+aiosqlite://{db_path}", str(scripts_dir))
         await runner.upgrade()
-        from dinao.backend import create_connection_pool
-
         pool = create_connection_pool(f"sqlite3+aiosqlite://{db_path}")
         cnx = await pool.lease()
         async with cnx.query("SELECT status, applied_count FROM dinao_migration_state") as results:
@@ -196,8 +186,6 @@ class TestAsyncMigrationRunnerUpgrade:
             'async def upgrade(cnx):\n    await cnx.execute("CREATE TABLE t1 (id INTEGER)")\n'
         )
         # Pre-create tables and insert a lock row using sync sqlite
-        from dinao.backend import create_connection_pool
-
         pool = create_connection_pool(f"sqlite3://{db_path}")
         cnx = pool.lease()
         runner = AsyncMigrationRunner(f"sqlite3+aiosqlite://{db_path}", str(scripts_dir))

@@ -1,7 +1,9 @@
 """Tests for the synchronous MigrationRunner."""
 
 import os
+import tempfile
 
+from dinao.backend import create_connection_pool
 from dinao.migration.errors import DiscoveryError, MigrationInProgressError, RevisionError
 from dinao.migration.runner.sync import MigrationRunner
 
@@ -59,8 +61,6 @@ class TestMigrationRunnerUpgrade:
         runner = MigrationRunner(f"sqlite3://{db_path}", str(scripts_dir))
         runner.upgrade()
         # Check tracking table directly
-        from dinao.backend import create_connection_pool
-
         pool = create_connection_pool(f"sqlite3://{db_path}")
         cnx = pool.lease()
         with cnx.query("SELECT revision_name, status FROM dinao_migration_revisions") as results:
@@ -81,8 +81,6 @@ class TestMigrationRunnerUpgrade:
         )
         runner = MigrationRunner(f"sqlite3://{db_path}", str(scripts_dir))
         runner.upgrade()
-        from dinao.backend import create_connection_pool
-
         pool = create_connection_pool(f"sqlite3://{db_path}")
         cnx = pool.lease()
         with cnx.query("SELECT status, applied_count FROM dinao_migration_state") as results:
@@ -104,8 +102,6 @@ class TestMigrationRunnerUpgrade:
         runner = MigrationRunner(f"sqlite3://{db_path}", str(scripts_dir))
         with pytest.raises(RevisionError, match="intentional failure"):
             runner.upgrade()
-        from dinao.backend import create_connection_pool
-
         pool = create_connection_pool(f"sqlite3://{db_path}")
         cnx = pool.lease()
         with cnx.query("SELECT status, error_type FROM dinao_migration_revisions") as results:
@@ -143,8 +139,6 @@ class TestMigrationRunnerUpgrade:
         with pytest.raises(RevisionError, match="boom"):
             runner.upgrade()
         # t1 should exist (committed), t2 should not (rolled back)
-        from dinao.backend import create_connection_pool
-
         pool = create_connection_pool(f"sqlite3://{db_path}")
         cnx = pool.lease()
         with cnx.query("SELECT name FROM sqlite_master WHERE type='table' AND name='t1'") as results:
@@ -184,8 +178,6 @@ class TestMigrationRunnerUpgrade:
             'def upgrade(cnx):\n    cnx.execute("CREATE TABLE t2 (id INTEGER)")\n'
         )
         runner.upgrade()
-        from dinao.backend import create_connection_pool
-
         pool = create_connection_pool(f"sqlite3://{db_path}")
         cnx = pool.lease()
         with cnx.query("SELECT revision_name FROM dinao_migration_revisions ORDER BY revision_name") as results:
@@ -205,8 +197,6 @@ class TestMigrationRunnerUpgrade:
             'def upgrade(cnx):\n    cnx.execute("CREATE TABLE t1 (id INTEGER)")\n'
         )
         # Pre-create tables and insert a lock row
-        from dinao.backend import create_connection_pool
-
         pool = create_connection_pool(f"sqlite3://{db_path}")
         cnx = pool.lease()
         runner = MigrationRunner(f"sqlite3://{db_path}", str(scripts_dir))
@@ -224,10 +214,6 @@ class TestMigrationRunnerUpgrade:
 
     def test_sample_scripts(self):
         """Verify the bundled sample scripts work end-to-end."""
-        import tempfile
-
-        from dinao.backend import create_connection_pool
-
         sample_dir = os.path.join(os.path.dirname(__file__), "sample_scripts")
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "test.db")
