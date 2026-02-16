@@ -28,7 +28,7 @@ class ConnectionPoolPSQLPsycopg3(ConnectionPoolPSQL):
         """
         super().__init__(db_url)
         try:
-            import psycopg_pool
+            import psycopg_pool  # pylint: disable=import-outside-toplevel
         except ModuleNotFoundError:  # pragma: no cover
             issue = "Module psycopg-pool not installed, cannot create connection pool"
             raise BackendNotInstalledError(issue)
@@ -70,7 +70,7 @@ class AsyncConnectionPoolPSQLPsycopg3(AsyncConnectionPoolPSQL):
         """
         super().__init__(db_url)
         try:
-            import psycopg_pool
+            import psycopg_pool  # pylint: disable=import-outside-toplevel
         except ModuleNotFoundError:  # pragma: no cover
             issue = "Module psycopg-pool not installed, cannot create async connection pool"
             raise BackendNotInstalledError(issue)

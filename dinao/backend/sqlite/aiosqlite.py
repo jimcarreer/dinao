@@ -73,14 +73,14 @@ class AsyncConnectionPoolAiosqlite(ConnectionPoolSQLiteMixin, AsyncConnectionPoo
         """
         super().__init__(db_url)
         try:
-            import aiosqlite  # noqa: F401
+            import aiosqlite  # noqa: F401  pylint: disable=import-outside-toplevel
         except ModuleNotFoundError:  # pragma: no cover
             raise BackendNotInstalledError("Module aiosqlite not installed, cannot create async connection pool")
         self._cnx_kwargs = self._url_to_cnx_kwargs()
         self._raise_for_unexpected_args()
 
     async def lease(self):  # noqa: D102
-        import aiosqlite
+        import aiosqlite  # pylint: disable=import-outside-toplevel
 
         inner_cnx = await aiosqlite.connect(**self._cnx_kwargs)
         return ConnectionAiosqlite(inner_cnx)

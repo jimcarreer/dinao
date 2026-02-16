@@ -39,7 +39,7 @@ class ConnectionPoolMariaDB(ConnectionPool):
         """
         super().__init__(db_url)
         try:
-            from mariadb import ConnectionPool
+            from mariadb import ConnectionPool  # pylint: disable=import-outside-toplevel
         except ModuleNotFoundError:  # pragma: no cover
             issue = "Module mariadb not installed, cannot create connection pool"
             raise BackendNotInstalledError(issue)

@@ -20,6 +20,8 @@ jobs:
         run: pip install -e ".[lint]"
       - name: Run Flake8gi
         run: flake8 ./dinao/ ./tests/
+      - name: Run PyLint
+        run: pylint ./dinao/ ./tests/
       - name: Run Black Check
         run: black --check --diff ./dinao/ ./tests/
       - name: Run Spell Check

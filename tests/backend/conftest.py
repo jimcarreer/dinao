@@ -4,7 +4,16 @@ import os
 import uuid
 from typing import Any, Generator
 
+import mariadb
+
+import psycopg
+
+import psycopg2
+
 import pytest
+
+from tests.backend import mariadb_test_sql
+from tests.backend import postgres_test_sql
 
 
 @pytest.fixture()
@@ -16,9 +25,6 @@ def rand_db_name() -> str:
 @pytest.fixture()
 def tmp_psql_db_url(rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test postgres instance."""
-    import psycopg2
-    from tests.backend import postgres_test_sql as test_sql
-
     database = os.environ.get("DINAO_TEST_PSQL_DB", "postgres")
     hostname = os.environ.get("DINAO_TEST_PSQL_HOST", "127.0.0.1")
     username = os.environ.get("DINAO_TEST_PSQL_USER", "psql_test_user")
@@ -29,7 +35,7 @@ def tmp_psql_db_url(rand_db_name) -> Generator[str, Any, None]:
     cursor.execute("commit")
     cursor.execute(f"CREATE DATABASE {rand_db_name}")
     yield f"postgresql+psycopg2://{username}:{password}@{hostname}:{port}/{rand_db_name}"
-    cursor.execute(test_sql.TERMINATE_DB_CONNS, (rand_db_name,))
+    cursor.execute(postgres_test_sql.TERMINATE_DB_CONNS, (rand_db_name,))
     cursor.execute(f"DROP DATABASE {rand_db_name}")
     cursor.close()
     cnx.close()
@@ -38,9 +44,6 @@ def tmp_psql_db_url(rand_db_name) -> Generator[str, Any, None]:
 @pytest.fixture()
 def tmp_psycopg3_db_url(rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test postgres instance using psycopg (v3)."""
-    import psycopg
-    from tests.backend import postgres_test_sql as test_sql
-
     database = os.environ.get("DINAO_TEST_PSQL_DB", "postgres")
     hostname = os.environ.get("DINAO_TEST_PSQL_HOST", "127.0.0.1")
     username = os.environ.get("DINAO_TEST_PSQL_USER", "psql_test_user")
@@ -50,7 +53,7 @@ def tmp_psycopg3_db_url(rand_db_name) -> Generator[str, Any, None]:
     cursor = cnx.cursor()
     cursor.execute(f"CREATE DATABASE {rand_db_name}")
     yield f"postgresql+psycopg://{username}:{password}@{hostname}:{port}/{rand_db_name}"
-    cursor.execute(test_sql.TERMINATE_DB_CONNS, (rand_db_name,))
+    cursor.execute(postgres_test_sql.TERMINATE_DB_CONNS, (rand_db_name,))
     cursor.execute(f"DROP DATABASE {rand_db_name}")
     cursor.close()
     cnx.close()
@@ -59,9 +62,6 @@ def tmp_psycopg3_db_url(rand_db_name) -> Generator[str, Any, None]:
 @pytest.fixture()
 def tmp_psycopg3_async_db_url(rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test postgres instance using psycopg (v3) in async mode."""
-    import psycopg
-    from tests.backend import postgres_test_sql as test_sql
-
     database = os.environ.get("DINAO_TEST_PSQL_DB", "postgres")
     hostname = os.environ.get("DINAO_TEST_PSQL_HOST", "127.0.0.1")
     username = os.environ.get("DINAO_TEST_PSQL_USER", "psql_test_user")
@@ -71,7 +71,7 @@ def tmp_psycopg3_async_db_url(rand_db_name) -> Generator[str, Any, None]:
     cursor = cnx.cursor()
     cursor.execute(f"CREATE DATABASE {rand_db_name}")
     yield f"postgresql+psycopg+async://{username}:{password}@{hostname}:{port}/{rand_db_name}"
-    cursor.execute(test_sql.TERMINATE_DB_CONNS, (rand_db_name,))
+    cursor.execute(postgres_test_sql.TERMINATE_DB_CONNS, (rand_db_name,))
     cursor.execute(f"DROP DATABASE {rand_db_name}")
     cursor.close()
     cnx.close()
@@ -80,9 +80,6 @@ def tmp_psycopg3_async_db_url(rand_db_name) -> Generator[str, Any, None]:
 @pytest.fixture()
 def tmp_maria_db_url(rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test mariadb instance."""
-    import mariadb
-    from tests.backend import mariadb_test_sql as test_sql
-
     hostname = os.environ.get("DINAO_TEST_MARIA_HOST", "127.0.0.1")
     password = os.environ.get("DINAO_TEST_MARIA_PASS", "maria_test_pass")
     username = os.environ.get("DINAO_TEST_MARIA_USER", "maria_test_user")
@@ -93,7 +90,7 @@ def tmp_maria_db_url(rand_db_name) -> Generator[str, Any, None]:
     cursor.execute(f"CREATE DATABASE {rand_db_name}")
     cursor.execute(f"GRANT ALL PRIVILEGES ON {rand_db_name}.* TO {username}")
     yield f"mariadb+mariadbconnector://{username}:{password}@{hostname}:{port}/{rand_db_name}"
-    cursor.execute(f"{test_sql.TERMINATE_DB_CONNS} WHERE db = '{rand_db_name}'")
+    cursor.execute(f"{mariadb_test_sql.TERMINATE_DB_CONNS} WHERE db = '{rand_db_name}'")
     rows = cursor.fetchall() if cursor.field_count else []
     for row in rows:  # pragma: no cover
         try:
@@ -108,9 +105,6 @@ def tmp_maria_db_url(rand_db_name) -> Generator[str, Any, None]:
 @pytest.fixture()
 def tmp_mysql_db_url(rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test mariadb instance."""
-    import mariadb
-    from tests.backend import mariadb_test_sql as test_sql
-
     hostname = os.environ.get("DINAO_TEST_MYSQL_HOST", "127.0.0.1")
     password = os.environ.get("DINAO_TEST_MYSQL_PASS", "mysql_test_pass")
     username = os.environ.get("DINAO_TEST_MYSQL_USER", "mysql_test_user")
@@ -121,7 +115,7 @@ def tmp_mysql_db_url(rand_db_name) -> Generator[str, Any, None]:
     cursor.execute(f"CREATE DATABASE {rand_db_name}")
     cursor.execute(f"GRANT ALL PRIVILEGES ON {rand_db_name}.* TO {username}")
     yield f"mysql+mysqlconnector://{username}:{password}@{hostname}:{port}/{rand_db_name}"
-    cursor.execute(f"{test_sql.TERMINATE_DB_CONNS} WHERE db = '{rand_db_name}'")
+    cursor.execute(f"{mariadb_test_sql.TERMINATE_DB_CONNS} WHERE db = '{rand_db_name}'")
     rows = cursor.fetchall() if cursor.field_count else []
     for row in rows:  # pragma: no cover
         try:
@@ -136,9 +130,6 @@ def tmp_mysql_db_url(rand_db_name) -> Generator[str, Any, None]:
 @pytest.fixture()
 def tmp_asyncpg_db_url(rand_db_name) -> Generator[str, Any, None]:
     """Provide a DB Connection Pool URL for the test postgres instance using asyncpg."""
-    import psycopg
-    from tests.backend import postgres_test_sql as test_sql
-
     database = os.environ.get("DINAO_TEST_PSQL_DB", "postgres")
     hostname = os.environ.get("DINAO_TEST_PSQL_HOST", "127.0.0.1")
     username = os.environ.get("DINAO_TEST_PSQL_USER", "psql_test_user")
@@ -148,7 +139,7 @@ def tmp_asyncpg_db_url(rand_db_name) -> Generator[str, Any, None]:
     cursor = cnx.cursor()
     cursor.execute(f"CREATE DATABASE {rand_db_name}")
     yield f"postgresql+asyncpg+async://{username}:{password}@{hostname}:{port}/{rand_db_name}"
-    cursor.execute(test_sql.TERMINATE_DB_CONNS, (rand_db_name,))
+    cursor.execute(postgres_test_sql.TERMINATE_DB_CONNS, (rand_db_name,))
     cursor.execute(f"DROP DATABASE {rand_db_name}")
     cursor.close()
     cnx.close()
