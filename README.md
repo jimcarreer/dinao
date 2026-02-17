@@ -149,6 +149,79 @@ if __name__ == '__main__':
     asyncio.run(main())
 ```
 
+### Migrations
+
+DINAO includes a simple, forward-only migration system for managing
+schema changes. Migration scripts are plain Python files that define
+an `upgrade` function. The runner discovers scripts in a directory,
+tracks which have been applied, and executes pending ones in order.
+A locking mechanism prevents concurrent migration runs.
+
+**Script naming**: By default, files must match a date and sequence
+pattern such as `20260216_001_create_users.py`. This can be changed
+by passing a custom regex to the runner's `pattern` parameter.
+Scripts are applied in lexicographic order.
+
+Each script defines an `upgrade(cnx)` function that receives a
+`MigrationConnection` (sync) or `AsyncMigrationConnection` (async).
+The connection provides `execute()` and `query()` methods that
+support the DINAO `#{var}` template syntax:
+
+``` python
+# migrations/20260216_001_create_users.py
+"""Create the users table."""
+
+
+async def upgrade(cnx):
+    """Create users table with name and email columns."""
+    await cnx.execute(
+        "CREATE TABLE IF NOT EXISTS users ("
+        "  name VARCHAR(256) PRIMARY KEY,"
+        "  email VARCHAR(256) NOT NULL"
+        ")"
+    )
+```
+
+``` python
+# migrations/20260216_002_seed_data.py
+"""Insert initial user records."""
+
+
+async def upgrade(cnx):
+    """Seed the users table with default entries."""
+    for name, email in [("admin", "admin@co.com"), ("bob", "bob@co.com")]:
+        await cnx.execute(
+            "INSERT INTO users (name, email) VALUES (#{name}, #{email})",
+            name=name,
+            email=email,
+        )
+```
+
+To run migrations, create a `MigrationRunner` (sync) or
+`AsyncMigrationRunner` (async) and call `upgrade()`:
+
+``` python
+import asyncio
+import os
+from dinao.migration import AsyncMigrationRunner
+
+db_url = "postgresql+asyncpg://user:pass@localhost:5432/mydb"
+script_dir = os.path.join(os.path.dirname(__file__), "migrations")
+
+runner = AsyncMigrationRunner(db_url, script_dir)
+asyncio.run(runner.upgrade())
+```
+
+The runner automatically creates two tracking tables
+(`dinao_migration_revisions` and `dinao_migration_state`) to record
+applied revisions and migration run status. Each script runs in its
+own transaction -- if a script fails, the error is recorded and a
+`RevisionError` is raised.
+
+For a complete working example integrating migrations with
+FastAPI, see
+[examples/fastapi](https://github.com/jimcarreer/dinao/tree/main/examples/fastapi).
+
 ## Contributing
 
 Check out our [code of
