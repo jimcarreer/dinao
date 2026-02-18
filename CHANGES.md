@@ -38,7 +38,7 @@ New backends, migration support, and bug fixes.
 
 ## 2.2.0
 
-Unused / released version, due to build issue, deleted from pypi
+Unused / released version, due to build issue, deleted from py pi
 
 ## 2.1.0
 
