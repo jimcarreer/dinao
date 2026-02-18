@@ -31,6 +31,7 @@ class Smacker(threading.Thread):
         self.api = f"{API_BASE}/items"
         self.worker_num = worker_num
         self.metrics = metrics
+        self.session = requests.Session()
 
     def _api_action(self) -> requests.Response:
         """Execute the API call. Override in subclasses."""
@@ -38,12 +39,15 @@ class Smacker(threading.Thread):
 
     def run(self):
         """Run the API action in a loop until shutdown is signaled."""
-        while not self.shutdown_flag.is_set():
-            start_time = time.perf_counter()
-            res = self._api_action()
-            elapsed = time.perf_counter() - start_time
-            self.metrics.record(self.api_action_name, elapsed, res.status_code)
-        self.metrics.mark_worker_done()
+        try:
+            while not self.shutdown_flag.is_set():
+                start_time = time.perf_counter()
+                res = self._api_action()
+                elapsed = time.perf_counter() - start_time
+                self.metrics.record(self.api_action_name, elapsed, res.status_code)
+        finally:
+            self.session.close()
+            self.metrics.mark_worker_done()
 
 
 class SmackPutter(Smacker):
@@ -55,7 +59,7 @@ class SmackPutter(Smacker):
         """Create a new item via POST."""
         name = f"testing_{self.worker_num}_{str(uuid.uuid4())}"
         value = random.randint(1, 100)
-        return requests.post(self.api, json={'name': name, 'value': value})
+        return self.session.post(self.api, json={'name': name, 'value': value})
 
 
 class SmackerLister(Smacker):
@@ -70,7 +74,7 @@ class SmackerLister(Smacker):
             "size": random.randint(1, 200),
             "search": f"testing_{self.worker_num}_%",
         }
-        return requests.get(self.api, params=params)
+        return self.session.get(self.api, params=params)
 
 
 class SmackerSummer(Smacker):
@@ -84,7 +88,7 @@ class SmackerSummer(Smacker):
             "search": f"testing_{self.worker_num}%",
             "size": random.randint(1, 200),
         }
-        return requests.get(f"{self.api}/summed", params=params)
+        return self.session.get(f"{self.api}/summed", params=params)
 
 
 class ShutdownNow(Exception):
