@@ -1,6 +1,6 @@
 # Change Log
 
-## 2.2.0
+## 2.3.0
 
 New backends, migration support, and bug fixes.
 
@@ -35,6 +35,10 @@ New backends, migration support, and bug fixes.
 -   `BACKENDS.md` expanded with asyncpg and aiosqlite docs
 -   Stress test examples added for sync and async backends
 -   FastAPI example updated to use migrations and dashboard
+
+## 2.2.0
+
+Unused / released version, due to build issue, deleted from py pi
 
 ## 2.1.0
 
