@@ -1,8 +1,40 @@
 # Change Log
 
-## NEXT VERSION PLACEHOLDER
+## 2.2.0
 
--   Placeholder for next version.
+New backends, migration support, and bug fixes.
+
+### Features
+
+-   asyncpg backend for PostgreSQL async support
+    (`postgresql+asyncpg://`), including numbered mung symbol
+    providers (`$1`, `$2`, ...) abstracted via `dinao.mung`
+-   aiosqlite backend for SQLite async support
+    (`sqlite+aiosqlite://`)
+-   Database migration module (`dinao.migration`) with sync and
+    async runners, schema tracking, and support for all existing
+    backends
+
+### Bug Fixes
+
+-   SQLite mapper now correctly maps `bool` and `datetime` column
+    types
+-   Async binders now properly clean up ContextVar state when a
+    generator is abandoned before exhaustion (asyncpg context
+    poisoning)
+-   `sqlite3+<engine>://` URL schemes now raise
+    `UnsupportedBackendError` instead of silently ignoring the
+    engine qualifier
+-   Async binders now raise `BindingError` at decoration time when
+    applied to a non-async function, and sync binders do the same
+    for async functions
+
+### Chores
+
+-   Documentation for migration feature added to `README.md`
+-   `BACKENDS.md` expanded with asyncpg and aiosqlite docs
+-   Stress test examples added for sync and async backends
+-   FastAPI example updated to use migrations and dashboard
 
 ## 2.1.0
 
