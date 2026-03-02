@@ -382,6 +382,36 @@ async def test_async_bool_return(async_binder_and_pool: Tuple[AsyncFunctionBinde
     "async_binder_and_pool",
     [
         [
+            MockDMLCursor(1),
+            MockDMLCursor(2),
+        ],
+    ],
+    indirect=["async_binder_and_pool"],
+)
+async def test_async_transaction_with_optional_arg(
+    async_binder_and_pool: Tuple[AsyncFunctionBinder, AsyncMockConnectionPool],
+):
+    """Tests async transaction binder works when a non-connection arg is Optional and defaults to None."""
+    binder, pool = async_binder_and_pool
+
+    @binder.execute("INSERT INTO table VALUES (#{arg})")
+    async def bound_insert(arg: str) -> int:
+        pass  # pragma: no cover
+
+    @binder.transaction()
+    async def do_something(my_arg: str, optional_filter: Optional[str] = None) -> int:
+        return await bound_insert(my_arg)
+
+    assert await do_something("test") == 1
+    assert await do_something("test2", optional_filter="some_filter") == 2
+    assert len(pool.connection_stack) == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "async_binder_and_pool",
+    [
+        [
             MockDQLCursor([("found",)], (("value", 0),)),
             MockDQLCursor([], (("value", 0),)),
             MockDQLCursor([(1, "test", 3.0)], (("field_01", 0), ("field_02", 1), ("field_03", 2))),

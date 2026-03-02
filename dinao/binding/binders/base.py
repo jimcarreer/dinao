@@ -292,7 +292,8 @@ class BoundTransactionBase(BoundFunction):
         super().__init__(binder, func)
         self._cnx_arg_name = None
         for name in self._sig.parameters:
-            if issubclass(self._sig.parameters[name].annotation, self._cnx_class):
+            annotation = self._sig.parameters[name].annotation
+            if inspect.isclass(annotation) and issubclass(annotation, self._cnx_class):
                 if self._cnx_arg_name is not None:
                     error = f"Connection argument specified multiple times for {self.bound_function.__name__}"
                     raise MultipleConnectionArgumentError(error)

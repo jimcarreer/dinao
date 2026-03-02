@@ -254,6 +254,33 @@ def test_binder_bool_return(binder_and_pool: Tuple[FunctionBinder, MockConnectio
     "binder_and_pool",
     [
         [
+            MockDMLCursor(1),
+            MockDMLCursor(2),
+        ],
+    ],
+    indirect=["binder_and_pool"],
+)
+def test_transaction_with_optional_arg(binder_and_pool: Tuple[FunctionBinder, MockConnectionPool]):
+    """Tests transaction binder works when a non-connection arg is Optional and defaults to None."""
+    binder, pool = binder_and_pool
+
+    @binder.execute("INSERT INTO table VALUES (#{arg})")
+    def bound_insert(arg: str) -> int:
+        pass  # pragma: no cover
+
+    @binder.transaction()
+    def do_something(my_arg: str, optional_filter: Optional[str] = None) -> int:
+        return bound_insert(my_arg)
+
+    assert do_something("test") == 1
+    assert do_something("test2", optional_filter="some_filter") == 2
+    assert len(pool.connection_stack) == 2
+
+
+@pytest.mark.parametrize(
+    "binder_and_pool",
+    [
+        [
             MockDQLCursor([("found",)], (("value", 0),)),
             MockDQLCursor([], (("value", 0),)),
             MockDQLCursor([(1, "test", 3.0)], (("field_01", 0), ("field_02", 1), ("field_03", 2))),
