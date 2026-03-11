@@ -1,5 +1,14 @@
 # Change Log
 
+## 2.3.1
+
+### Bug Fixes
+
+-   `@transaction` no longer raises `TypeError` when a function
+    argument is annotated with an `Optional` type (e.g.
+    `Optional[Connection]`); the annotation is now checked with
+    `inspect.isclass` before calling `issubclass`
+
 ## 2.3.0
 
 New backends, migration support, and bug fixes.
